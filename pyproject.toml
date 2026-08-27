@@ -1,7 +1,7 @@
 [project]
 name = "litflow"
 version = "0.1.0"
-description = "Zotero → Markdown 语义文献包 → 向量检索：本地文献流处理与 MCP 服务（含任意文件夹 OCR/索引的 adhoc 临时任务）"
+description = "Zotero → Markdown 语义文献包 → 向量检索：各学科通用的本地文献流处理与 MCP 服务（含任意文件夹 OCR/索引的 adhoc 临时任务）"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "litflow contributors" }]

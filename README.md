@@ -1,6 +1,6 @@
 # litflow
 
-**Zotero → Markdown 语义文献包 → 向量检索**：面向人文研究的本地文献流处理系统，并以 MCP（Model Context Protocol）服务的形式暴露给任意本地/远程 AI 客户端。
+**Zotero → Markdown 语义文献包 → 向量检索**：面向各学科学术研究的本地文献流处理系统（人文、社科、理工、医学等均有大量影印/扫描资料的领域尤其受益），并以 MCP（Model Context Protocol）服务的形式暴露给任意本地/远程 AI 客户端。
 
 ## 应用场景
 

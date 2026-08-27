@@ -44,7 +44,7 @@ from .zotero_collector import ZoteroCollector
 mcp = FastMCP(
     "litflow",
     instructions=(
-        "litflow：人文社科文献流服务。工作流程：① zotero_collections / zotero_search "
+        "litflow：学科学术文献流服务（人文/社科/理工/医学等通用）。工作流程：① zotero_collections / zotero_search "
         "找到 Zotero 分类或条目；② litflow_prepare 把分类转换为语义文献包并建向量索引"
         "（默认增量，大分类耗时长，可传 wait=False 后台执行并用 litflow_job_status 轮询）；"
         "③ litflow_search 做自然语言检索（支持跨语言，命中带原书页码 page 字段）；"
