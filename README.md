@@ -355,4 +355,6 @@ sovena 站在以下项目肩膀上，深表感谢：
 
 ## License
 
-MIT © sovena contributors、西南大学·艺术人类学研究所、西南大学·中国音乐心理健康研究所；构建者：石丰恺（sfk8815@swu.edu.cn）
+MIT © Sovena contributors、西南大学·艺术人类学研究所、西南大学·中国音乐心理健康研究所；作者：石丰恺（sfklc@hotmail.com）
+
+[English version of this README](README.en.md)
