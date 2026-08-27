@@ -4,13 +4,13 @@
     python -m litflow.server   （或 uv run litflow serve）
     → MCP 端点 http://localhost:8765/mcp（远程经 tailscale 用机器 IP）
 
-工具一览（对标并超越 zotero-mcp）：
-    ---- Zotero 读取（对标 search/collection/content 类）----
+工具一览：
+    ---- Zotero 读取 ----
     zotero_collections       分类树 + 准备状态
     zotero_search            多维元数据搜索（q/标题/作者/年份/标签）
     zotero_item              条目详情（元数据+附件+笔记）
     zotero_annotations       PDF 标注（高亮/批注，按颜色/类型）
-    ---- litflow 核心（独有能力）----
+    ---- litflow 核心 ----
     litflow_prepare          一键「将子分类做好 AI 调用准备」（默认增量）
     litflow_job_status       任务进度/日志
     litflow_jobs             任务列表
@@ -19,11 +19,11 @@
     litflow_find_similar     按条目找语义相似文献
     litflow_manifest         分类文献包清单
     litflow_read_item        读取文献 markdown 全文
-    ---- adhoc 临时资料（独有）----
+    ---- adhoc 临时资料 ----
     litflow_adhoc_process    任意文件/文件夹 → OCR+向量索引
     litflow_adhoc_list       已有资料包列表
     ---- 运维 ----
-    litflow_doctor           连通性诊断（Zotero/LM Studio/目录权限）
+    litflow_doctor           连通性诊断（Zotero/embedding/目录权限/OCR）
     litflow_system_status    系统资源状态
 
 注：Zotero 本地 API 只读，故不提供写条目工具（与进程内插件方案的差异）。
