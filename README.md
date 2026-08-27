@@ -11,20 +11,19 @@
 - **AI 深度阅读外脑**：Claude Desktop / Cherry Studio / Trae 等客户端经 MCP 直接查你的文献库，回答带出处
 - **远程协作**：服务端部署在任意满足运行条件的电脑上（家中/实验室/云端均可），其他电脑在 AI 客户端里填服务端 URL 即可使用
 
-对标 [cookjohn/zotero-mcp](https://github.com/cookjohn/zotero-mcp)，并在其基础上扩展为完整的「文献流」：
+## 核心能力
 
-| 能力 | zotero-mcp | litflow |
-| --- | --- | --- |
-| Zotero 分类/条目/标注读取 | ✅ | ✅（本地 API，无需 Web API key） |
-| 文献全文获取 | 链接附件路径 | ✅ 转换为 AI 友好 Markdown（含【书页页码】标注） |
-| 扫描/影印 PDF OCR | ❌ | ✅ L2 通道（Unlimited-OCR，MLX / GGUF 双后端，全平台） |
-| 向量语义检索 | ❌ | ✅ LanceDB + 任意 OpenAI 兼容 embedding 服务 |
-| 增量处理 | ❌ | ✅ 条目 version + 附件指纹（mtime）双重检测 |
-| 一键启动 | 多步配置 | ✅ `uv run litflow` 单进程起 Web + MCP |
-| 非 Zotero 资料（任意文件夹） | ❌ | ✅ adhoc 临时资料包（OCR + 索引） |
-| 远程部署 | ❌ | ✅ 服务端起一次，其他电脑填 URL 即可（Tailscale） |
-| Zotero 客户端集成 | ❌ | ✅ 附带 Zotero 插件（.xpi，分类/条目右键直达） |
-| 任务调度/资源守卫 | ❌ | ✅ OCR 并发=1、内存守卫、按需加载模型 |
+| 能力 | 说明 |
+| --- | --- |
+| Zotero 深度接入 | 分类/条目/标注读取（本地 API，无需 Web API key）；附带 Zotero 插件（.xpi，分类/条目右键直达） |
+| 文献全文转换 | 附件批量转为 AI 友好 Markdown，含【书页页码】标注（PDF Page Labels 与 OCR 页码双重来源） |
+| 扫描/影印件 OCR | Unlimited-OCR 结构化识别，MLX / GGUF（llama-server）双后端，全平台、可远程 |
+| 向量语义检索 | LanceDB + 任意 OpenAI 兼容 embedding 服务（本地或远程商用平台） |
+| 增量处理 | 条目 version + 附件指纹（mtime）双重检测，只处理新增/变更内容 |
+| 一键启动 | `uv run litflow` 单进程起 Web 监管台 + MCP 端点 |
+| 非 Zotero 资料 | 电子书库、散装 PDF、讲义等任意文件/文件夹，做成同样可检索的临时资料包（adhoc） |
+| 远程部署 | 服务端起一次，其他电脑填 URL 即可（如 Tailscale 组网） |
+| 任务调度/资源守卫 | OCR 并发=1、内存守卫、模型按需加载/释放，不会把电脑跑死 |
 
 ## 架构
 
@@ -327,7 +326,7 @@ litflow/
 litflow 站在以下项目肩膀上，深表感谢：
 
 - **[Unlimited-OCR](https://github.com/baidu/Unlimited-OCR)**（百度，MIT）— 文档 OCR 模型本体；`ocr_port/` 代码移植自 [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) 社区的 MLX 实现，权重经 LM Studio（作者 LoJexLLM 整理的 MLX 格式）分发；GGUF 量化版转换来自 [sahilchachra](https://huggingface.co/sahilchachra/Unlimited-OCR-GGUF)，http 后端经 [llama.cpp](https://github.com/ggml-org/llama.cpp)（MIT）的 llama-server 运行
-- **[cookjohn/zotero-mcp](https://github.com/cookjohn/zotero-mcp)** — 本项目对标与超越的起点
+- **[cookjohn/zotero-mcp](https://github.com/cookjohn/zotero-mcp)** — 项目灵感来源之一
 - **[Zotero](https://www.zotero.org/)**（AGPL）— 文献管理本体与本地 API
 - **[PyMuPDF](https://github.com/pymupdf/PyMuPDF)**（AGPL）— PDF 文本提取与页码标签
 - **[LanceDB](https://github.com/lancedb/lancedb)**（Apache-2.0）— 本地向量库
