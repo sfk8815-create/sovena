@@ -1,11 +1,11 @@
 # Sovena
 
+**English** | [简体中文](README.md)
+
 **Zotero → Markdown semantic literature packs → vector retrieval**: a local literature-flow processing system for academic research across all disciplines (especially beneficial for fields rich in scanned/photocopied materials — humanities, social sciences, STEM, medicine), exposed to any local or remote AI client as an MCP (Model Context Protocol) service.
 
 > "Sovena" echoes 缙云文采 in Chinese: 缙云 (Jinyun) is the mountain in Beibei, Chongqing, home of Southwest University; 文采 carries a double meaning — to **harvest** the essence of literature, and the **brilliance** of fine writing.
 > "Pluck the flowers of the distant past, to brew the honey of our own." — Wu Mi (who taught at Southwest University for twenty-eight years)
-
-[中文版 README](README.md)
 
 ## Use Cases
 
@@ -357,5 +357,3 @@ Sovena stands on the shoulders of these projects, with deep gratitude:
 ## License
 
 MIT © Sovena contributors, Institute of Art Anthropology (Southwest University), Institute of Chinese Music Mental Health (Southwest University); author: Fengkai Shi (sfklc@hotmail.com)
-
-[中文版 README](README.md)

@@ -1,5 +1,7 @@
 # 缙云文采 Sovena
 
+[English](README.en.md) | **简体中文**
+
 **Zotero → Markdown 语义文献包 → 向量检索**：面向各学科学术研究的本地文献流处理系统（人文、社科、理工、医学等均有大量影印/扫描资料的领域尤其受益），并以 MCP（Model Context Protocol）服务的形式暴露给任意本地/远程 AI 客户端。
 
 > 「缙云」取自北碚缙云山——西南大学所在地；「文采」兼含二义：既是**采撷**文献之精华，亦是文章之华**采**。
@@ -356,5 +358,3 @@ sovena 站在以下项目肩膀上，深表感谢：
 ## License
 
 MIT © Sovena contributors、西南大学·艺术人类学研究所、西南大学·中国音乐心理健康研究所；作者：石丰恺（sfklc@hotmail.com）
-
-[English version of this README](README.en.md)
