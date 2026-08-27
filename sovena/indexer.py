@@ -1,8 +1,8 @@
-"""jinyun 向量索引与自然语言检索（LanceDB + OpenAI 兼容 embedding 服务）。
+"""sovena 向量索引与自然语言检索（LanceDB + OpenAI 兼容 embedding 服务）。
 
 - 嵌入服务：任意 OpenAI 兼容 /embeddings 接口——本地 mlx-lm / Ollama /
   vLLM / llama-server，或远程商用平台（阿里云百炼、OpenRouter、SiliconFlow
-  等），均只需填 API 地址与密钥（JINYUN_EMBED_API / JINYUN_EMBED_API_KEY）
+  等），均只需填 API 地址与密钥（SOVENA_EMBED_API / SOVENA_EMBED_API_KEY）
 - 分块：按页码标注切块（页边界优先，块内保留页码上下文）
 - 检索：cos 相似度 + 元数据过滤（分类/标题/年份）
 """
@@ -21,14 +21,14 @@ import numpy as np
 
 PAGE_MARK = re.compile(r"\*\*\[p\.([^\]]+)\]\*\*")
 
-DEFAULT_EMBED_API = os.environ.get("JINYUN_EMBED_API", "http://localhost:8080/v1")
-DEFAULT_EMBED_API_KEY = os.environ.get("JINYUN_EMBED_API_KEY", "")
+DEFAULT_EMBED_API = os.environ.get("SOVENA_EMBED_API", "http://localhost:8080/v1")
+DEFAULT_EMBED_API_KEY = os.environ.get("SOVENA_EMBED_API_KEY", "")
 DEFAULT_EMBED_MODEL = os.environ.get(
-    "JINYUN_EMBED_MODEL", "text-embedding-qwen3-embedding-4b"
+    "SOVENA_EMBED_MODEL", "text-embedding-qwen3-embedding-4b"
 )
-# 向量库默认跟随 JINYUN_ROOT（仅设置 JINYUN_ROOT 也可整体迁移）
-DEFAULT_DB_PATH = os.environ.get("JINYUN_LANCEDB") or os.path.join(
-    os.environ.get("JINYUN_ROOT") or os.path.expanduser("~/jinyun_data"),
+# 向量库默认跟随 SOVENA_ROOT（仅设置 SOVENA_ROOT 也可整体迁移）
+DEFAULT_DB_PATH = os.environ.get("SOVENA_LANCEDB") or os.path.join(
+    os.environ.get("SOVENA_ROOT") or os.path.expanduser("~/sovena_data"),
     "_lancedb",
 )
 

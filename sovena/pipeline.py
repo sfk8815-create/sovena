@@ -1,8 +1,8 @@
-"""jinyun 流水线编排：分类 → 转换 → 语义包 → 向量索引。
+"""sovena 流水线编排：分类 → 转换 → 语义包 → 向量索引。
 
 「将某 Zotero 文库中的子分类做好 AI 调用准备」的落地实现：
-    python -m jinyun.pipeline 准备 "古琴研究" [--limit N] [--no-ocr]
-    python -m jinyun.pipeline 检索 "古琴音色" [--collection 古琴研究]
+    python -m sovena.pipeline 准备 "古琴研究" [--limit N] [--no-ocr]
+    python -m sovena.pipeline 检索 "古琴音色" [--collection 古琴研究]
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from .packager import Packager, file_fingerprint, md5_of_file
 from .zotero_collector import LitRecord, ZoteroCollector
 
 OCR_MODEL_DIR = os.environ.get(
-    "JINYUN_OCR_MODEL",
+    "SOVENA_OCR_MODEL",
     "~/models/Unlimited-OCR-MLX",
 )
 OCR_MODEL_DIR = os.path.expanduser(OCR_MODEL_DIR)
@@ -309,7 +309,7 @@ def _cli_progress(stage, info):
 def main(argv: Optional[list[str]] = None):
     import argparse
 
-    ap = argparse.ArgumentParser(description="jinyun 文献流水线")
+    ap = argparse.ArgumentParser(description="sovena 文献流水线")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p1 = sub.add_parser("准备", help="将分类做好 AI 调用准备（默认增量）")

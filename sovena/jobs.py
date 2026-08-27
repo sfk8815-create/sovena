@@ -1,4 +1,4 @@
-"""jinyun 任务调度：串行作业队列 + 资源守卫。
+"""sovena 任务调度：串行作业队列 + 资源守卫。
 
 - 单工作线程串行执行 prepare 作业（OCR 引擎一次性加载/释放，防止超载）
 - psutil 内存守卫：可用内存低于阈值时作业保持排队，不启动
@@ -17,7 +17,7 @@ from typing import Optional
 
 import psutil
 
-MEM_GUARD_MB = int(os.environ.get("JINYUN_MEM_GUARD_MB", "12288"))  # 12GB
+MEM_GUARD_MB = int(os.environ.get("SOVENA_MEM_GUARD_MB", "12288"))  # 12GB
 MAX_LOG = 200
 
 
@@ -64,7 +64,7 @@ class JobManager:
         self._lock = threading.Lock()
         self._mem_guard_mb = mem_guard_mb
         self._cancel_events: dict[str, threading.Event] = {}
-        self._worker = threading.Thread(target=self._run, daemon=True, name="jinyun-worker")
+        self._worker = threading.Thread(target=self._run, daemon=True, name="sovena-worker")
         self._worker.start()
 
     # ------------------------------------------------------------------
@@ -231,7 +231,7 @@ def get_manager() -> JobManager:
 
 def system_status() -> dict:
     vm = psutil.virtual_memory()
-    root = os.environ.get("JINYUN_ROOT") or os.path.expanduser("~/jinyun_data")
+    root = os.environ.get("SOVENA_ROOT") or os.path.expanduser("~/sovena_data")
     disk = None
     try:
         p = root if os.path.isdir(root) else os.path.expanduser("~")

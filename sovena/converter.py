@@ -1,4 +1,4 @@
-"""jinyun 文献转换器：L1 文本路 / L2 OCR 路 / anydoc 非PDF路。
+"""sovena 文献转换器：L1 文本路 / L2 OCR 路 / anydoc 非PDF路。
 
 所有输出为对 AI 友好的 markdown，并尽可能标注【书页页码】（PDF Page Label，
 非物理页序）：
@@ -184,7 +184,7 @@ def pdf_ocr_to_markdown(
         n = len(doc)
         for i in range(n):
             pix = doc[i].get_pixmap(matrix=pymupdf.Matrix(zoom, zoom))
-            img_path = f"/tmp/jinyun_ocr_{i}.png"
+            img_path = f"/tmp/sovena_ocr_{i}.png"
             pix.save(img_path)
             try:
                 raw = ocr_engine.infer_single(

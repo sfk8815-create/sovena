@@ -1,7 +1,7 @@
-"""jinyun 服务总入口：Web 监管界面 + MCP 端点，单进程按需启动。
+"""sovena 服务总入口：Web 监管界面 + MCP 端点，单进程按需启动。
 
-    python -m jinyun.server            # 前台运行，Ctrl+C 停止
-    JINYUN_HOST=0.0.0.0 JINYUN_PORT=8765
+    python -m sovena.server            # 前台运行，Ctrl+C 停止
+    SOVENA_HOST=0.0.0.0 SOVENA_PORT=8765
 
 启动后：
     Web UI:   http://localhost:8765/
@@ -10,8 +10,8 @@
 
 本地个人配置可写进项目根目录的 `.env`（KEY=VALUE，已被 .gitignore 忽略，
 不会进入仓库），在导入其余模块前加载，例如：
-    JINYUN_ROOT=/Volumes/your-disk/zotero_AI
-    JINYUN_ZOTERO_API=http://localhost:23119/api
+    SOVENA_ROOT=/Volumes/your-disk/zotero_AI
+    SOVENA_ZOTERO_API=http://localhost:23119/api
 
 「听需调用」：本服务不常驻、不开机自启；需要监管或 AI 客户端要调用时启动，
 用完关闭即可。检索/准备等重操作均在内部串行调度并带内存守卫。

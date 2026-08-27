@@ -881,47 +881,6 @@ wheels = [
 ]
 
 [[package]]
-name = "jinyun"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "einops" },
-    { name = "fastmcp" },
-    { name = "firecrawl-anydoc" },
-    { name = "httpx" },
-    { name = "lancedb" },
-    { name = "mlx" },
-    { name = "mlx-lm" },
-    { name = "pillow" },
-    { name = "psutil" },
-    { name = "pymupdf" },
-    { name = "pyyaml" },
-    { name = "safetensors" },
-    { name = "torch" },
-    { name = "trafilatura" },
-    { name = "transformers" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "einops", specifier = ">=0.8.2" },
-    { name = "fastmcp", specifier = ">=3.4.7" },
-    { name = "firecrawl-anydoc", specifier = ">=0.2.3" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "lancedb", specifier = ">=0.37.1" },
-    { name = "mlx", specifier = ">=0.32.2" },
-    { name = "mlx-lm", specifier = ">=0.31.3" },
-    { name = "pillow", specifier = ">=12.3.0" },
-    { name = "psutil", specifier = ">=7.2.2" },
-    { name = "pymupdf", specifier = ">=1.28.2" },
-    { name = "pyyaml", specifier = ">=6.0.3" },
-    { name = "safetensors", specifier = ">=0.8.0" },
-    { name = "torch", specifier = ">=2.13.0" },
-    { name = "trafilatura", specifier = ">=2.2.0" },
-    { name = "transformers", specifier = ">=5.16.0" },
-]
-
-[[package]]
 name = "joserfc"
 version = "1.7.4"
 source = { registry = "https://pypi.org/simple" }
@@ -2457,6 +2416,47 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
+]
+
+[[package]]
+name = "sovena"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "einops" },
+    { name = "fastmcp" },
+    { name = "firecrawl-anydoc" },
+    { name = "httpx" },
+    { name = "lancedb" },
+    { name = "mlx" },
+    { name = "mlx-lm" },
+    { name = "pillow" },
+    { name = "psutil" },
+    { name = "pymupdf" },
+    { name = "pyyaml" },
+    { name = "safetensors" },
+    { name = "torch" },
+    { name = "trafilatura" },
+    { name = "transformers" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "einops", specifier = ">=0.8.2" },
+    { name = "fastmcp", specifier = ">=3.4.7" },
+    { name = "firecrawl-anydoc", specifier = ">=0.2.3" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "lancedb", specifier = ">=0.37.1" },
+    { name = "mlx", specifier = ">=0.32.2" },
+    { name = "mlx-lm", specifier = ">=0.31.3" },
+    { name = "pillow", specifier = ">=12.3.0" },
+    { name = "psutil", specifier = ">=7.2.2" },
+    { name = "pymupdf", specifier = ">=1.28.2" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "safetensors", specifier = ">=0.8.0" },
+    { name = "torch", specifier = ">=2.13.0" },
+    { name = "trafilatura", specifier = ">=2.2.0" },
+    { name = "transformers", specifier = ">=5.16.0" },
 ]
 
 [[package]]

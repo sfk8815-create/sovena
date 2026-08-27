@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>缙云文献流 · 监管台</title>
+<title>缙云文采 · 监管台</title>
 <style>
   :root {
     --bg:#f4f6f9; --card:#fff; --ink:#1a2430; --mut:#77828e; --line:#e6eaf0;
@@ -180,7 +180,7 @@
 <header>
   <div class="brand">
     <span class="logo">L</span>
-    <h1>缙云文献流</h1>
+    <h1>缙云文采</h1>
     <span class="sub">Zotero → Markdown 语义包 → 向量检索</span>
   </div>
   <div class="head-right">
@@ -654,13 +654,13 @@ async function loadConfig() {
       ? `http 后端 · ${c.ocr.api}（模型 ${c.ocr.model_name || '默认'}）`
       : `mlx 后端 · ${c.ocr.mlx_model_dir || '默认路径'}`) : '-';
     const items = [
-      ['语义包根目录', c.root, 'JINYUN_ROOT'],
-      ['Zotero 本地 API', c.zotero_api, 'JINYUN_ZOTERO_API'],
-      ['Embedding 服务', c.embed_api, 'JINYUN_EMBED_API（+ JINYUN_EMBED_API_KEY）'],
-      ['向量模型', c.embed_model, 'JINYUN_EMBED_MODEL'],
-      ['OCR 后端', ocrDesc, 'JINYUN_OCR_BACKEND / JINYUN_OCR_API'],
-      ['LanceDB 目录', c.lancedb, 'JINYUN_LANCEDB'],
-      ['服务监听', `${c.host}:${c.port}`, 'JINYUN_HOST / JINYUN_PORT'],
+      ['语义包根目录', c.root, 'SOVENA_ROOT'],
+      ['Zotero 本地 API', c.zotero_api, 'SOVENA_ZOTERO_API'],
+      ['Embedding 服务', c.embed_api, 'SOVENA_EMBED_API（+ SOVENA_EMBED_API_KEY）'],
+      ['向量模型', c.embed_model, 'SOVENA_EMBED_MODEL'],
+      ['OCR 后端', ocrDesc, 'SOVENA_OCR_BACKEND / SOVENA_OCR_API'],
+      ['LanceDB 目录', c.lancedb, 'SOVENA_LANCEDB'],
+      ['服务监听', `${c.host}:${c.port}`, 'SOVENA_HOST / SOVENA_PORT'],
     ];
     $('#cfgGrid').innerHTML = items.map(([k, v, env]) => `
       <div class="cfg-item"><div class="k">${esc(k)}</div>

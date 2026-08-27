@@ -1,10 +1,10 @@
 [project]
-name = "jinyun"
+name = "sovena"
 version = "0.1.0"
-description = "缙云文献流（Jinyun Literature Flow）：Zotero → Markdown 语义文献包 → 向量检索，各学科通用的本地文献流处理与 MCP 服务（含任意文件夹 OCR/索引的 adhoc 临时任务）"
+description = "缙云文采（Sovena）：Zotero → Markdown 语义文献包 → 向量检索，各学科通用的本地文献流处理与 MCP 服务（含任意文件夹 OCR/索引的 adhoc 临时任务）"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "jinyun contributors" }]
+authors = [{ name = "sovena contributors" }]
 requires-python = ">=3.12"
 dependencies = [
     "einops>=0.8.2",
@@ -25,16 +25,16 @@ dependencies = [
 ]
 
 [project.scripts]
-jinyun = "jinyun.server:main"
+sovena = "sovena.server:main"
 
 [tool.uv]
 package = true
 
 [tool.setuptools]
-packages = ["jinyun", "ocr_port"]
+packages = ["sovena", "ocr_port"]
 
 [tool.setuptools.package-data]
-jinyun = ["webui.html"]
+sovena = ["webui.html"]
 
 [[tool.uv.index]]
 url = "https://pypi.org/simple"

@@ -1,4 +1,4 @@
-"""jinyun Zotero 采集器。
+"""sovena Zotero 采集器。
 
 通过 Zotero 本地 API（http://localhost:23119/api）读取文库分类与条目，
 并解析 4 路附件为本地可读文件/URL：
@@ -20,7 +20,7 @@ from typing import Optional
 
 import httpx
 
-DEFAULT_API = os.environ.get("JINYUN_ZOTERO_API", "http://localhost:23119/api")
+DEFAULT_API = os.environ.get("SOVENA_ZOTERO_API", "http://localhost:23119/api")
 
 PDF_CONTENT_TYPES = {"application/pdf"}
 SNAPSHOT_CONTENT_TYPES = {"text/html", "application/xhtml+xml"}

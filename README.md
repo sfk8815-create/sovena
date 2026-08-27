@@ -1,8 +1,8 @@
-# 缙云文献流 Jinyun
+# 缙云文采 Sovena
 
 **Zotero → Markdown 语义文献包 → 向量检索**：面向各学科学术研究的本地文献流处理系统（人文、社科、理工、医学等均有大量影印/扫描资料的领域尤其受益），并以 MCP（Model Context Protocol）服务的形式暴露给任意本地/远程 AI 客户端。
 
-> 「缙云」取自北碚缙云山——西南大学所在地；「文献流」言其功能：让文献如活水，流经检索、流经 AI、流进你的研究。
+> 「缙云」取自北碚缙云山——西南大学所在地；「文采」兼含二义：既是**采撷**文献之精华，亦是文章之华**采**。
 > 「采撷远古之花兮，以酿造吾人之蜜。」——吴宓（执教西南大学二十八年）
 
 ## 应用场景
@@ -23,7 +23,7 @@
 | 扫描/影印件 OCR | Unlimited-OCR 结构化识别，MLX / GGUF（llama-server）双后端，全平台、可远程 |
 | 向量语义检索 | LanceDB + 任意 OpenAI 兼容 embedding 服务（本地或远程商用平台） |
 | 增量处理 | 条目 version + 附件指纹（mtime）双重检测，只处理新增/变更内容 |
-| 一键启动 | `uv run jinyun` 单进程起 Web 监管台 + MCP 端点 |
+| 一键启动 | `uv run sovena` 单进程起 Web 监管台 + MCP 端点 |
 | 非 Zotero 资料 | 电子书库、散装 PDF、讲义等任意文件/文件夹，做成同样可检索的临时资料包（adhoc） |
 | 远程部署 | 服务端起一次，其他电脑填 URL 即可（如 Tailscale 组网） |
 | 任务调度/资源守卫 | OCR 并发=1、内存守卫、模型按需加载/释放，不会把电脑跑死 |
@@ -51,7 +51,7 @@ Zotero(本地API) ─┐
 
 ## OCR 引擎与模型部署
 
-jinyun 的 OCR 通道使用 **Unlimited-OCR**（[百度开源](https://github.com/baidu/Unlimited-OCR)，MIT 协议，模型权重在 [HuggingFace `baidu/Unlimited-OCR`](https://huggingface.co/baidu/Unlimited-OCR)）：DeepSeek-V2 MoE 解码器 + SAM/CLIP 双视觉塔的文档 OCR 模型，能整篇识别多页扫描件并还原标题/表格/版式。
+sovena 的 OCR 通道使用 **Unlimited-OCR**（[百度开源](https://github.com/baidu/Unlimited-OCR)，MIT 协议，模型权重在 [HuggingFace `baidu/Unlimited-OCR`](https://huggingface.co/baidu/Unlimited-OCR)）：DeepSeek-V2 MoE 解码器 + SAM/CLIP 双视觉塔的文档 OCR 模型，能整篇识别多页扫描件并还原标题/表格/版式。
 
 支持**两种后端**，输出同为结构化格式，下游转换无感知：
 
@@ -69,10 +69,10 @@ huggingface-cli download LoJexLLM/Unlimited-OCR-MLX \
   --local-dir ~/models/Unlimited-OCR-MLX
 ```
 
-默认就落在 jinyun 的默认路径（`~/models/Unlimited-OCR-MLX`），**无需任何配置**。放到其他位置则在 `.env` 指定：
+默认就落在 sovena 的默认路径（`~/models/Unlimited-OCR-MLX`），**无需任何配置**。放到其他位置则在 `.env` 指定：
 
 ```dotenv
-JINYUN_OCR_MODEL=/path/to/Unlimited-OCR-MLX
+SOVENA_OCR_MODEL=/path/to/Unlimited-OCR-MLX
 ```
 
 ### 后端二：GGUF（任意电脑，含无 GPU 的 Windows/Linux）
@@ -90,13 +90,13 @@ llama-server -m ocr-models/Unlimited-OCR-Q4_K_M.gguf \
   --mmproj ocr-models/mmproj-Unlimited-OCR-F16.gguf \
   --host 127.0.0.1 --port 8080
 
-# 3. jinyun 侧启用 http 后端（项目根目录 .env）
-echo 'JINYUN_OCR_API=http://127.0.0.1:8080/v1' >> .env
+# 3. sovena 侧启用 http 后端（项目根目录 .env）
+echo 'SOVENA_OCR_API=http://127.0.0.1:8080/v1' >> .env
 ```
 
-也可用 vLLM 等任何能跑该 GGUF 的 OpenAI 兼容服务（模型名不同时加 `JINYUN_OCR_MODEL_NAME=...`；有鉴权加 `JINYUN_OCR_API_KEY=...`）。OCR 服务甚至可以部署在另一台有 GPU 的机器上，jinyun 填它的地址即可。
+也可用 vLLM 等任何能跑该 GGUF 的 OpenAI 兼容服务（模型名不同时加 `SOVENA_OCR_MODEL_NAME=...`；有鉴权加 `SOVENA_OCR_API_KEY=...`）。OCR 服务甚至可以部署在另一台有 GPU 的机器上，sovena 填它的地址即可。
 
-> 提示：Q4 量化约 3GB，16GB 内存的普通电脑即可运行。jinyun 按需调用（逐页请求），不在 jinyun 进程内占内存。
+> 提示：Q4 量化约 3GB，16GB 内存的普通电脑即可运行。sovena 按需调用（逐页请求），不在 sovena 进程内占内存。
 
 **Embedding 服务（检索用，必须）**——任意 OpenAI 兼容 `/embeddings` 接口均可，二选一：
 
@@ -106,20 +106,20 @@ echo 'JINYUN_OCR_API=http://127.0.0.1:8080/v1' >> .env
 uv tool install mlx-lm            # 或 pip install mlx-lm
 huggingface-cli download Qwen/Qwen3-Embedding-4B --local-dir ~/models/Qwen3-Embedding-4B
 mlx_lm.server --model ~/models/Qwen3-Embedding-4B --port 8080
-# 起一个 OpenAI 兼容 /v1/embeddings 服务，即 jinyun 的默认地址 http://localhost:8080/v1
+# 起一个 OpenAI 兼容 /v1/embeddings 服务，即 sovena 的默认地址 http://localhost:8080/v1
 ```
 
-Ollama / vLLM 等其他 OpenAI 兼容本地方案同理（地址不同时设 `JINYUN_EMBED_API`）
+Ollama / vLLM 等其他 OpenAI 兼容本地方案同理（地址不同时设 `SOVENA_EMBED_API`）
 - **远程商用平台**（不想本地跑模型）：阿里云百炼 / OpenRouter / SiliconFlow 等，只需在 `.env` 填 API 地址与密钥：
 
 ```dotenv
 # 示例：阿里云百炼（OpenAI 兼容端点）
-JINYUN_EMBED_API=https://dashscope.aliyuncs.com/compatible-mode/v1
-JINYUN_EMBED_API_KEY=sk-你的密钥
-JINYUN_EMBED_MODEL=text-embedding-v4
+SOVENA_EMBED_API=https://dashscope.aliyuncs.com/compatible-mode/v1
+SOVENA_EMBED_API_KEY=sk-你的密钥
+SOVENA_EMBED_MODEL=text-embedding-v4
 ```
 
-> 注意：更换 embedding 服务/模型后向量维度与语义空间会变化，已有索引需重建（jinyun 检测到维度不匹配会明确提示；删除 `_lancedb` 目录后重新「准备」各分类，或勾选「全量重建」）。
+> 注意：更换 embedding 服务/模型后向量维度与语义空间会变化，已有索引需重建（sovena 检测到维度不匹配会明确提示；删除 `_lancedb` 目录后重新「准备」各分类，或勾选「全量重建」）。
 
 ## 快速开始
 
@@ -138,7 +138,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### 第 2 步：装 Zotero 并保持运行
 
 - 到 [zotero.org](https://www.zotero.org/) 下载安装 Zotero 7+，导入你的文献
-- jinyun 通过 Zotero 的**本地 API** 读取（Zotero 打开着就自动可用，无需任何设置）
+- sovena 通过 Zotero 的**本地 API** 读取（Zotero 打开着就自动可用，无需任何设置）
 - 附件可以是「导入的附件」或「链接附件」，两种都支持
 
 ### 第 3 步：准备模型服务（检索必需 + OCR 可选）
@@ -147,16 +147,16 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 - **本地（推荐）**：[mlx-lm](https://github.com/ml-explore/mlx-lm)（Apple 官方 MLX 生态，MIT）——`uv tool install mlx-lm`，下载模型并 `mlx_lm.server --model <模型目录> --port 8080` 起服务（完整命令见上节「Embedding 服务」）。Ollama / vLLM 等其他 OpenAI 兼容方案同理
 - **远程平台（不在本地跑模型）**：阿里云百炼 / OpenRouter 等，在项目根目录建 `.env` 填地址与密钥（见上节「Embedding 服务」的示例）
 
-**OCR 模型（仅扫描件需要，Apple Silicon）**：从 HuggingFace 下载 [Unlimited-OCR-MLX](https://huggingface.co/LoJexLLM/Unlimited-OCR-MLX) 到 `~/models/Unlimited-OCR-MLX`（命令见上节「后端一」，jinyun 需要时会自己加载/释放）
+**OCR 模型（仅扫描件需要，Apple Silicon）**：从 HuggingFace 下载 [Unlimited-OCR-MLX](https://huggingface.co/LoJexLLM/Unlimited-OCR-MLX) 到 `~/models/Unlimited-OCR-MLX`（命令见上节「后端一」，sovena 需要时会自己加载/释放）
 
 > **非 Apple Silicon 电脑**做 OCR：改用「GGUF 后端」——下载 [Unlimited-OCR-GGUF](https://huggingface.co/sahilchachra/Unlimited-OCR-GGUF) + 跑 llama-server，配置见上节「后端二」。
 > 只想快速体验、暂时不检索？模型服务可以后补，先跳过做第 4-5 步。
 
-### 第 4 步：获取 jinyun 并安装依赖
+### 第 4 步：获取 sovena 并安装依赖
 
 ```bash
-git clone https://github.com/<you>/jinyun.git
-cd jinyun
+git clone https://github.com/<you>/sovena.git
+cd sovena
 uv sync        # 自动下载全部依赖（首次约 1.3GB，需要几分钟）
 ```
 
@@ -165,7 +165,7 @@ uv sync        # 自动下载全部依赖（首次约 1.3GB，需要几分钟）
 ### 第 5 步：一键启动
 
 ```bash
-uv run jinyun
+uv run sovena
 ```
 
 看到 `Uvicorn running on http://0.0.0.0:8765` 即成功。浏览器打开 **http://localhost:8765**：
@@ -177,10 +177,10 @@ uv run jinyun
 
 ### 第 6 步（可选）：个人路径配置
 
-默认数据存在 `~/jinyun_data`。想放别处（如移动硬盘），在项目根目录建 `.env` 文件：
+默认数据存在 `~/sovena_data`。想放别处（如移动硬盘），在项目根目录建 `.env` 文件：
 
 ```bash
-echo 'JINYUN_ROOT=/Volumes/你的盘/jinyun_data' > .env
+echo 'SOVENA_ROOT=/Volumes/你的盘/sovena_data' > .env
 ```
 
 `.env` 已被 git 忽略，写个人路径不会进仓库。
@@ -197,7 +197,7 @@ Web 台「Zotero 文献流」→ 选一个**小分类**（如 5 条文献）→�
 | 提示端口被占用 | 旧服务没关：`lsof -ti tcp:8765 \| xargs kill` 后重启 |
 | 「Zotero 连接失败」 | Zotero 没打开，或装的是旧版（需 7.0+） |
 | 检索报错/无结果 | embedding 服务没开/密钥不对（本地 mlx-lm 或远程平台），或该分类还没「准备」过；换过 embedding 模型需重建索引 |
-| OCR 报模型错误 | MLX 后端：没下载 `Unlimited-OCR-MLX` 或路径不对；http 后端：llama-server 没启动或 `JINYUN_OCR_API` 填错（见上节） |
+| OCR 报模型错误 | MLX 后端：没下载 `Unlimited-OCR-MLX` 或路径不对；http 后端：llama-server 没启动或 `SOVENA_OCR_API` 填错（见上节） |
 | 机器风扇狂转 | 正常：OCR 任务较重；任务结束模型会自动卸载 |
 
 ### 第 8 步（可选）：AI 客户端接入（其他电脑同样适用）
@@ -207,27 +207,27 @@ Web 台「Zotero 文献流」→ 选一个**小分类**（如 5 条文献）→�
 ```json
 {
   "mcpServers": {
-    "jinyun": { "url": "http://localhost:8765/mcp" }
+    "sovena": { "url": "http://localhost:8765/mcp" }
   }
 }
 ```
 
-远程（其他电脑）部署：服务端 `JINYUN_HOST=0.0.0.0` 启动（默认），客户端把 URL 换成 `http://<服务器IP或Tailscale主机名>:8765/mcp` 即可。Web 监管台「设置」页可一键复制/下载当前部署的配置 JSON。
+远程（其他电脑）部署：服务端 `SOVENA_HOST=0.0.0.0` 启动（默认），客户端把 URL 换成 `http://<服务器IP或Tailscale主机名>:8765/mcp` 即可。Web 监管台「设置」页可一键复制/下载当前部署的配置 JSON。
 
 ## Zotero 插件（可选）
 
-`dist/jinyun-plugin-<version>.xpi` 是可安装到 **Zotero 7+（含 9/10）** 的客户端插件，让 Zotero 内直达 jinyun：
+`dist/sovena-plugin-<version>.xpi` 是可安装到 **Zotero 7+（含 9/10）** 的客户端插件，让 Zotero 内直达 sovena：
 
-- **分类右键** → 「jinyun：准备/更新语义包（增量）」
-- **条目右键** → 「jinyun：把附件加入临时语义包」（所选条目的本地文件附件走 adhoc 流程）
-- **工具菜单 jinyun** → 打开监管台 / 服务端地址设置 / 复制 MCP 客户端配置 / 连接检查
+- **分类右键** → 「sovena：准备/更新语义包（增量）」
+- **条目右键** → 「sovena：把附件加入临时语义包」（所选条目的本地文件附件走 adhoc 流程）
+- **工具菜单 sovena** → 打开监管台 / 服务端地址设置 / 复制 MCP 客户端配置 / 连接检查
 
-安装：Zotero → 工具 → 插件 → 右上角齿轮 → Install Plugin From File… → 选择 `dist/jinyun-plugin-0.1.0.xpi`。默认连 `http://localhost:8765`；**其他电脑**在「工具 → jinyun → 服务端地址…」填 jinyun 服务器地址即可。
+安装：Zotero → 工具 → 插件 → 右上角齿轮 → Install Plugin From File… → 选择 `dist/sovena-plugin-0.1.0.xpi`。默认连 `http://localhost:8765`；**其他电脑**在「工具 → sovena → 服务端地址…」填 sovena 服务器地址即可。
 
 重新打包插件（修改 `zotero-plugin/` 后）：
 
 ```bash
-bash zotero-plugin/build.sh    # 产出 dist/jinyun-plugin-<version>.xpi
+bash zotero-plugin/build.sh    # 产出 dist/sovena-plugin-<version>.xpi
 ```
 
 ## 环境变量
@@ -235,39 +235,39 @@ bash zotero-plugin/build.sh    # 产出 dist/jinyun-plugin-<version>.xpi
 所有配置均可用环境变量设置；**推荐**在项目根目录建一个 `.env` 文件（已被 `.gitignore` 忽略，适合放个人路径），服务启动时自动加载：
 
 ```dotenv
-JINYUN_ROOT=/Volumes/your-disk/zotero_AI
-JINYUN_ZOTERO_API=http://localhost:23119/api
+SOVENA_ROOT=/Volumes/your-disk/zotero_AI
+SOVENA_ZOTERO_API=http://localhost:23119/api
 ```
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `JINYUN_ROOT` | `~/jinyun_data` | 语义文献包根目录（**个人部署建议在 `.env` 里设置**；LanceDB 默认随之） |
-| `JINYUN_ZOTERO_API` | `http://localhost:23119/api` | Zotero 本地 API |
-| `JINYUN_HOST` | `0.0.0.0` | 服务监听地址 |
-| `JINYUN_PORT` | `8765` | 服务端口 |
-| `JINYUN_EMBED_API` | `http://localhost:8080/v1` | embedding 服务地址（本地 mlx-lm/Ollama 或远程平台） |
-| `JINYUN_EMBED_API_KEY` | （空） | embedding 服务密钥（远程商用平台必填） |
-| `JINYUN_EMBED_MODEL` | `text-embedding-qwen3-embedding-4b` | embedding 模型名 |
-| `JINYUN_LANCEDB` | `$JINYUN_ROOT/_lancedb` | 向量库目录 |
-| `JINYUN_OCR_BACKEND` | `auto` | OCR 后端：`mlx` / `http` / `auto`（设了 `JINYUN_OCR_API` 则自动 http） |
-| `JINYUN_OCR_MODEL` | `~/models/Unlimited-OCR-MLX` | MLX 后端模型目录 |
-| `JINYUN_OCR_API` | （空） | http 后端服务地址（如 `http://127.0.0.1:8080/v1`） |
-| `JINYUN_OCR_MODEL_NAME` | `Unlimited-OCR` | http 后端模型名 |
-| `JINYUN_OCR_API_KEY` | （空） | http 后端鉴权 key（如有） |
-| `JINYUN_MEM_GUARD_MB` | `12288` | 内存守卫阈值（MB），低于则推迟新任务 |
+| `SOVENA_ROOT` | `~/sovena_data` | 语义文献包根目录（**个人部署建议在 `.env` 里设置**；LanceDB 默认随之） |
+| `SOVENA_ZOTERO_API` | `http://localhost:23119/api` | Zotero 本地 API |
+| `SOVENA_HOST` | `0.0.0.0` | 服务监听地址 |
+| `SOVENA_PORT` | `8765` | 服务端口 |
+| `SOVENA_EMBED_API` | `http://localhost:8080/v1` | embedding 服务地址（本地 mlx-lm/Ollama 或远程平台） |
+| `SOVENA_EMBED_API_KEY` | （空） | embedding 服务密钥（远程商用平台必填） |
+| `SOVENA_EMBED_MODEL` | `text-embedding-qwen3-embedding-4b` | embedding 模型名 |
+| `SOVENA_LANCEDB` | `$SOVENA_ROOT/_lancedb` | 向量库目录 |
+| `SOVENA_OCR_BACKEND` | `auto` | OCR 后端：`mlx` / `http` / `auto`（设了 `SOVENA_OCR_API` 则自动 http） |
+| `SOVENA_OCR_MODEL` | `~/models/Unlimited-OCR-MLX` | MLX 后端模型目录 |
+| `SOVENA_OCR_API` | （空） | http 后端服务地址（如 `http://127.0.0.1:8080/v1`） |
+| `SOVENA_OCR_MODEL_NAME` | `Unlimited-OCR` | http 后端模型名 |
+| `SOVENA_OCR_API_KEY` | （空） | http 后端鉴权 key（如有） |
+| `SOVENA_MEM_GUARD_MB` | `12288` | 内存守卫阈值（MB），低于则推迟新任务 |
 
 ## 使用
 
 ### Zotero 文献流（增量）
 
-Web 台选择分类 →「启动准备」；或让 AI 客户端调用 MCP 工具 `jinyun_prepare`。重复执行自动增量：仅处理新增/变更条目（Zotero version 变化或附件 mtime 变化），索引按条目级增删。勾选「全量重建」可强制重来。
+Web 台选择分类 →「启动准备」；或让 AI 客户端调用 MCP 工具 `sovena_prepare`。重复执行自动增量：仅处理新增/变更条目（Zotero version 变化或附件 mtime 变化），索引按条目级增删。勾选「全量重建」可强制重来。
 
 ### adhoc 临时资料（任意文件/文件夹）
 
 把电子书库、散装 PDF、讲义等做成可检索语义包：
 
 - **Web 台**：「临时资料包」卡片填路径（多个用换行或 `;` 分隔）→ 提交，之后可与 Zotero 分类一起被语义检索
-- **MCP**：`jinyun_adhoc_process(paths=["/path/to/E_book/某子目录"], name="我的书库")`
+- **MCP**：`sovena_adhoc_process(paths=["/path/to/E_book/某子目录"], name="我的书库")`
 - **REST**：`POST /api/adhoc/submit` `{"paths": [...], "name": "..."}`
 
 支持 pdf/epub/docx/html/txt/md/xlsx/pptx 等；扫描版 PDF 自动走 OCR；同样支持增量（源文件 mtime 不变则跳过）。
@@ -277,16 +277,16 @@ Web 台选择分类 →「启动准备」；或让 AI 客户端调用 MCP 工具
 | 分类 | 工具 |
 | --- | --- |
 | Zotero 读取 | `zotero_collections` `zotero_search` `zotero_item` `zotero_annotations` |
-| 文献流 | `jinyun_prepare` `jinyun_manifest` `jinyun_read_item` `jinyun_search` `jinyun_find_similar` |
-| adhoc | `jinyun_adhoc_process` `jinyun_adhoc_list` |
-| 任务/运维 | `jinyun_job_status` `jinyun_jobs` `jinyun_cancel_job` `jinyun_system_status` `jinyun_doctor` |
+| 文献流 | `sovena_prepare` `sovena_manifest` `sovena_read_item` `sovena_search` `sovena_find_similar` |
+| adhoc | `sovena_adhoc_process` `sovena_adhoc_list` |
+| 任务/运维 | `sovena_job_status` `sovena_jobs` `sovena_cancel_job` `sovena_system_status` `sovena_doctor` |
 
 > 注：Zotero 本地 API 为只读，故不提供写操作工具。
 
 ## 语义包目录结构
 
 ```
-$JINYUN_ROOT/
+$SOVENA_ROOT/
   <分类名>/
     _manifest.json                 # 分类级清单（增量依据）
     <作者>_<年份>_<标题>/
@@ -319,9 +319,9 @@ $JINYUN_ROOT/
 ## 项目结构
 
 ```
-jinyun/
+sovena/
   main.py                  # 一键启动入口
-  jinyun/
+  sovena/
     server.py              # 服务总入口（Web + MCP 同进程，自动加载 .env）
     web.py / webui.html    # Web 监管台（分区 Tab + 路径选择器）
     mcp_server.py          # MCP 工具集
@@ -333,14 +333,14 @@ jinyun/
     packager.py            # 语义包落盘
     jobs.py                # 任务调度（内存守卫/OCR 并发=1）
   zotero-plugin/           # Zotero 客户端插件源码（bootstrap 结构）
-  dist/                    # 构建产物（jinyun-plugin-<version>.xpi）
+  dist/                    # 构建产物（sovena-plugin-<version>.xpi）
   ocr_port/                # Unlimited-OCR-MLX（MLX OCR 引擎）
   .env                     # 本地个人配置（可选，不入库）
 ```
 
 ## 致谢
 
-jinyun 站在以下项目肩膀上，深表感谢：
+sovena 站在以下项目肩膀上，深表感谢：
 
 - **[Unlimited-OCR](https://github.com/baidu/Unlimited-OCR)**（百度，MIT）— 文档 OCR 模型本体；`ocr_port/` 代码移植自 [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) 社区的 MLX 实现；MLX 权重（LoJexLLM 整理格式）与 GGUF 量化版（[sahilchachra](https://huggingface.co/sahilchachra/Unlimited-OCR-GGUF)）均来自 HuggingFace 社区；http 后端经 [llama.cpp](https://github.com/ggml-org/llama.cpp)（MIT）的 llama-server 运行
 - **[cookjohn/zotero-mcp](https://github.com/cookjohn/zotero-mcp)** — 项目灵感来源之一
@@ -355,4 +355,4 @@ jinyun 站在以下项目肩膀上，深表感谢：
 
 ## License
 
-MIT © jinyun contributors、西南大学·艺术人类学研究所、西南大学·中国音乐心理健康研究所；构建者：石丰恺（sfk8815@swu.edu.cn）
+MIT © sovena contributors、西南大学·艺术人类学研究所、西南大学·中国音乐心理健康研究所；构建者：石丰恺（sfk8815@swu.edu.cn）
