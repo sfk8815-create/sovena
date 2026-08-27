@@ -1,7 +1,7 @@
-"""litflow MCP 服务：把文献流能力以 MCP 工具形式暴露给 AI 客户端。
+"""jinyun MCP 服务：把文献流能力以 MCP 工具形式暴露给 AI 客户端。
 
 与 Web UI 同进程同端口：
-    python -m litflow.server   （或 uv run litflow serve）
+    python -m jinyun.server   （或 uv run jinyun serve）
     → MCP 端点 http://localhost:8765/mcp（远程经 tailscale 用机器 IP）
 
 工具一览：
@@ -10,21 +10,21 @@
     zotero_search            多维元数据搜索（q/标题/作者/年份/标签）
     zotero_item              条目详情（元数据+附件+笔记）
     zotero_annotations       PDF 标注（高亮/批注，按颜色/类型）
-    ---- litflow 核心 ----
-    litflow_prepare          一键「将子分类做好 AI 调用准备」（默认增量）
-    litflow_job_status       任务进度/日志
-    litflow_jobs             任务列表
-    litflow_cancel_job       取消任务
-    litflow_search           自然语言语义检索（跨语言、带原书页码）
-    litflow_find_similar     按条目找语义相似文献
-    litflow_manifest         分类文献包清单
-    litflow_read_item        读取文献 markdown 全文
+    ---- jinyun 核心 ----
+    jinyun_prepare          一键「将子分类做好 AI 调用准备」（默认增量）
+    jinyun_job_status       任务进度/日志
+    jinyun_jobs             任务列表
+    jinyun_cancel_job       取消任务
+    jinyun_search           自然语言语义检索（跨语言、带原书页码）
+    jinyun_find_similar     按条目找语义相似文献
+    jinyun_manifest         分类文献包清单
+    jinyun_read_item        读取文献 markdown 全文
     ---- adhoc 临时资料 ----
-    litflow_adhoc_process    任意文件/文件夹 → OCR+向量索引
-    litflow_adhoc_list       已有资料包列表
+    jinyun_adhoc_process    任意文件/文件夹 → OCR+向量索引
+    jinyun_adhoc_list       已有资料包列表
     ---- 运维 ----
-    litflow_doctor           连通性诊断（Zotero/embedding/目录权限/OCR）
-    litflow_system_status    系统资源状态
+    jinyun_doctor           连通性诊断（Zotero/embedding/目录权限/OCR）
+    jinyun_system_status    系统资源状态
 
 注：Zotero 本地 API 只读，故不提供写条目工具（与进程内插件方案的差异）。
 """
@@ -43,14 +43,14 @@ from .pipeline import Pipeline
 from .zotero_collector import ZoteroCollector
 
 mcp = FastMCP(
-    "litflow",
+    "jinyun",
     instructions=(
-        "litflow：学科学术文献流服务（人文/社科/理工/医学等通用）。工作流程：① zotero_collections / zotero_search "
-        "找到 Zotero 分类或条目；② litflow_prepare 把分类转换为语义文献包并建向量索引"
-        "（默认增量，大分类耗时长，可传 wait=False 后台执行并用 litflow_job_status 轮询）；"
-        "③ litflow_search 做自然语言检索（支持跨语言，命中带原书页码 page 字段）；"
-        "④ litflow_read_item 读取全文。非 Zotero 的本地资料（任意文件夹/文件）用 "
-        "litflow_adhoc_process 处理后同样可检索。引用时注意 page 是原书页码非物理页序。"
+        "jinyun：学科学术文献流服务（人文/社科/理工/医学等通用）。工作流程：① zotero_collections / zotero_search "
+        "找到 Zotero 分类或条目；② jinyun_prepare 把分类转换为语义文献包并建向量索引"
+        "（默认增量，大分类耗时长，可传 wait=False 后台执行并用 jinyun_job_status 轮询）；"
+        "③ jinyun_search 做自然语言检索（支持跨语言，命中带原书页码 page 字段）；"
+        "④ jinyun_read_item 读取全文。非 Zotero 的本地资料（任意文件夹/文件）用 "
+        "jinyun_adhoc_process 处理后同样可检索。引用时注意 page 是原书页码非物理页序。"
     ),
 )
 
@@ -58,8 +58,8 @@ _packager = Packager()
 _collector = ZoteroCollector()
 _pipe = Pipeline()
 
-DEFAULT_HOST = os.environ.get("LITFLOW_HOST", "0.0.0.0")   # 0.0.0.0 供 tailscale 远程访问
-DEFAULT_PORT = int(os.environ.get("LITFLOW_PORT", "8765"))
+DEFAULT_HOST = os.environ.get("JINYUN_HOST", "0.0.0.0")   # 0.0.0.0 供 tailscale 远程访问
+DEFAULT_PORT = int(os.environ.get("JINYUN_PORT", "8765"))
 
 
 # ---------------------------------------------------------------------------
@@ -103,7 +103,7 @@ def zotero_search(
     """按元数据搜索 Zotero 条目（q 为全文关键词，其余为精确过滤）。
 
     返回条目 key、标题、作者、年份、附件情况。拿到 item_key 后可用
-    zotero_item 看详情，或用 litflow_read_item 读已准备的全文。
+    zotero_item 看详情，或用 jinyun_read_item 读已准备的全文。
     """
     recs = _collector.search_items(
         q=q, title=title, creator=creator, year=year, tag=tag, limit=limit
@@ -176,11 +176,11 @@ def zotero_annotations(
 
 
 # ---------------------------------------------------------------------------
-# litflow 核心类
+# jinyun 核心类
 # ---------------------------------------------------------------------------
 
 @mcp.tool
-def litflow_prepare(
+def jinyun_prepare(
     collection: str,
     limit: int | None = None,
     use_ocr: bool = True,
@@ -205,7 +205,7 @@ def litflow_prepare(
         "use_ocr": use_ocr, "rebuild": rebuild,
     })
     if not wait:
-        return f"任务已提交：{job.id}。用 litflow_job_status 查询进度。"
+        return f"任务已提交：{job.id}。用 jinyun_job_status 查询进度。"
 
     deadline = time.time() + wait_timeout_sec
     while time.time() < deadline:
@@ -215,12 +215,12 @@ def litflow_prepare(
         time.sleep(2)
     return (
         f"等待超时（任务 {job.id} 仍在后台运行，状态 "
-        f"{mgr.get(job.id).status}）。用 litflow_job_status 继续查询。"
+        f"{mgr.get(job.id).status}）。用 jinyun_job_status 继续查询。"
     )
 
 
 @mcp.tool
-def litflow_job_status(job_id: str) -> str:
+def jinyun_job_status(job_id: str) -> str:
     """查询任务进度与最近日志。"""
     job = get_manager().get(job_id)
     if job is None:
@@ -229,7 +229,7 @@ def litflow_job_status(job_id: str) -> str:
 
 
 @mcp.tool
-def litflow_jobs() -> str:
+def jinyun_jobs() -> str:
     """列出全部任务（最近 100 个）。"""
     jobs = get_manager().list()
     if not jobs:
@@ -243,21 +243,21 @@ def litflow_jobs() -> str:
 
 
 @mcp.tool
-def litflow_cancel_job(job_id: str) -> str:
+def jinyun_cancel_job(job_id: str) -> str:
     """取消一个排队/运行中的任务。"""
     ok = get_manager().cancel(job_id)
     return "已取消" if ok else "无法取消（不存在或已结束）"
 
 
 @mcp.tool
-def litflow_search(query: str, collection: str | None = None, top_k: int = 8) -> str:
+def jinyun_search(query: str, collection: str | None = None, top_k: int = 8) -> str:
     """自然语言语义检索已准备的文献（含 adhoc 资料包，collection 形如 adhoc:书库名）。
 
     返回带原书页码（page 字段）的命中片段，支持跨语言（中文查询命中外文文献）。
     """
     hits = _pipe.search(query, collection=collection, top_k=top_k)
     if not hits:
-        return "无结果。请确认该分类已用 litflow_prepare 准备。"
+        return "无结果。请确认该分类已用 jinyun_prepare 准备。"
     out = []
     for h in hits:
         page = f" p.{h['page']}" if h.get("page") else ""
@@ -269,7 +269,7 @@ def litflow_search(query: str, collection: str | None = None, top_k: int = 8) ->
 
 
 @mcp.tool
-def litflow_find_similar(item_key: str, top_k: int = 5) -> str:
+def jinyun_find_similar(item_key: str, top_k: int = 5) -> str:
     """找与某条 Zotero 文献语义相似的其他文献块（基于向量索引）。"""
     # 该条目在索引中的所有块 → 取其代表（前 3 块的均值查询）
     t = _pipe.index._get_table()
@@ -307,7 +307,7 @@ def tbl_col(tbl, name):
 
 
 @mcp.tool
-def litflow_manifest(collection: str) -> str:
+def jinyun_manifest(collection: str) -> str:
     """查看某分类的语义文献包清单（条目、转换路由、页数、状态）。"""
     mf = _packager.load_manifest(collection)
     if mf is None:
@@ -323,10 +323,10 @@ def litflow_manifest(collection: str) -> str:
 
 
 @mcp.tool
-def litflow_read_item(collection: str, title: str) -> str:
+def jinyun_read_item(collection: str, title: str) -> str:
     """按题名（或题名片段/条目目录名）读取某条文献的 markdown 全文。
 
-    全文可能很长；建议先 litflow_search 定位，再读取命中文献。
+    全文可能很长；建议先 jinyun_search 定位，再读取命中文献。
     """
     mf = _packager.load_manifest(collection)
     if mf is None:
@@ -355,7 +355,7 @@ def litflow_read_item(collection: str, title: str) -> str:
 # ---------------------------------------------------------------------------
 
 @mcp.tool
-def litflow_adhoc_process(
+def jinyun_adhoc_process(
     paths: list[str],
     name: str | None = None,
     use_ocr: bool = True,
@@ -387,24 +387,24 @@ def litflow_adhoc_process(
         "use_ocr": use_ocr, "recursive": recursive, "index": True,
     })
     if not wait:
-        return f"任务已提交：{job.id}。用 litflow_job_status 查询进度。"
+        return f"任务已提交：{job.id}。用 jinyun_job_status 查询进度。"
     deadline = time.time() + wait_timeout_sec
     while time.time() < deadline:
         j = mgr.get(job.id)
         if j and j.status in ("done", "error", "cancelled"):
             return _fmt_job(j)
         time.sleep(2)
-    return f"等待超时（任务 {job.id} 仍在后台）。用 litflow_job_status 查询。"
+    return f"等待超时（任务 {job.id} 仍在后台）。用 jinyun_job_status 查询。"
 
 
 @mcp.tool
-def litflow_adhoc_list() -> str:
+def jinyun_adhoc_list() -> str:
     """列出已建立的 adhoc 资料包及其条目状态。"""
     from .adhoc import AdhocProcessor
 
     packs = AdhocProcessor(_packager, _pipe.index, _pipe.embedder, _pipe.ocr).list_packs()
     if not packs:
-        return "暂无资料包。用 litflow_adhoc_process 创建。"
+        return "暂无资料包。用 jinyun_adhoc_process 创建。"
     return "\n".join(
         f"- {p['name']}：{p['ok_items']}/{p['items']} 条就绪（更新于 {p['updated_at']}）"
         for p in packs
@@ -416,7 +416,7 @@ def litflow_adhoc_list() -> str:
 # ---------------------------------------------------------------------------
 
 @mcp.tool
-def litflow_doctor() -> str:
+def jinyun_doctor() -> str:
     """诊断系统连通性：Zotero API、embedding 服务、输出目录权限、OCR 后端。"""
     lines = []
     # Zotero
@@ -435,7 +435,7 @@ def litflow_doctor() -> str:
     root = _packager.root
     try:
         os.makedirs(root, exist_ok=True)
-        probe = os.path.join(root, ".litflow_probe")
+        probe = os.path.join(root, ".jinyun_probe")
         with open(probe, "w") as f:
             f.write("ok")
         os.remove(probe)
@@ -464,7 +464,7 @@ def litflow_doctor() -> str:
 
 
 @mcp.tool
-def litflow_system_status() -> str:
+def jinyun_system_status() -> str:
     """系统资源状态（内存守卫阈值、CPU、负载）。"""
     s = system_status()
     return (

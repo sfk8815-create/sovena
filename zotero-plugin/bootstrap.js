@@ -1,16 +1,16 @@
-/* litflow Zotero 插件 bootstrap（Zotero 7+，含 9/10）。
+/* jinyun Zotero 插件 bootstrap（Zotero 7+，含 9/10）。
  *
  * 功能：
- *   1. 分类右键 → 「litflow：准备/更新语义包」（POST /api/jobs，服务端增量处理）
- *   2. 条目右键 → 「litflow：把附件加入临时语义包」（POST /api/adhoc/submit）
+ *   1. 分类右键 → 「jinyun：准备/更新语义包」（POST /api/jobs，服务端增量处理）
+ *   2. 条目右键 → 「jinyun：把附件加入临时语义包」（POST /api/adhoc/submit）
  *   3. 工具菜单 → 监管台 / 服务器设置 / 复制 MCP 客户端配置 / 连接检查
  *
- * 服务端地址存于 pref extensions.litflow.serverUrl（默认 http://localhost:8765），
+ * 服务端地址存于 pref extensions.jinyun.serverUrl（默认 http://localhost:8765），
  * 换机器部署时仅需改此地址。
  */
 /* global Zotero, ChromeUtils, Services */
 
-var serverPref = "extensions.litflow.serverUrl";
+var serverPref = "extensions.jinyun.serverUrl";
 var _shutdownFn = null;
 
 var Services = globalThis.Services;
@@ -35,7 +35,7 @@ function setServerUrl(url) {
 }
 
 /**
- * 调 litflow REST API。
+ * 调 jinyun REST API。
  * @param {string} method GET/POST
  * @param {string} path 如 /api/system
  * @param {object|null} body POST 的 JSON 对象
@@ -59,7 +59,7 @@ async function api(method, path, body) {
     throw new Error(`HTTP ${req.status}: ${String(detail).slice(0, 200)}`);
   } catch (e) {
     if (e instanceof Zotero.HTTP.TimeoutException || /status 0|NetworkError/i.test(String(e))) {
-      throw new Error(`无法连接 litflow 服务端 ${getServerUrl()}（服务是否已启动？地址可在 工具→litflow 中修改）`);
+      throw new Error(`无法连接 jinyun 服务端 ${getServerUrl()}（服务是否已启动？地址可在 工具→jinyun 中修改）`);
     }
     throw e;
   }
@@ -77,14 +77,14 @@ function notify(headline, desc) {
     pw.show();
     pw.startCloseTimer(6000);
   } catch (e) {
-    Zotero.debug(`litflow: 通知失败 ${e}`);
+    Zotero.debug(`jinyun: 通知失败 ${e}`);
   }
 }
 
 function alertError(win, e) {
   const msg = e && e.message ? e.message : String(e);
   Zotero.logError(e);
-  Services.prompt.alert(win, "litflow 错误", msg);
+  Services.prompt.alert(win, "jinyun 错误", msg);
 }
 
 // ---------------------------------------------------------------------------
@@ -96,13 +96,13 @@ async function prepareCollection(win) {
     const treeRow = win.ZoteroPane.getCollectionTreeRow();
     const ref = treeRow && treeRow.ref;
     if (!ref || !ref.name) {
-      notify("litflow", "请先在左侧选中一个分类再操作。");
+      notify("jinyun", "请先在左侧选中一个分类再操作。");
       return;
     }
     // 判断是库还是分类
     const isLibrary = ref.isLibrary === true || ref.libraryID !== undefined && ref.name === undefined;
     if (isLibrary) {
-      notify("litflow", "请选择具体分类（不支持整个文库）。");
+      notify("jinyun", "请选择具体分类（不支持整个文库）。");
       return;
     }
     const job = await api("POST", "/api/jobs", {
@@ -110,8 +110,8 @@ async function prepareCollection(win) {
       use_ocr: true,
       rebuild: false,
     });
-    notify("litflow", `已提交「${ref.name}」语义包准备任务（${job.id}）`,
-      "增量处理：仅新增/变更条目会重新转换。进度见 litflow 监管台。");
+    notify("jinyun", `已提交「${ref.name}」语义包准备任务（${job.id}）`,
+      "增量处理：仅新增/变更条目会重新转换。进度见 jinyun 监管台。");
   } catch (e) {
     alertError(win, e);
   }
@@ -122,7 +122,7 @@ async function addItemsToAdhoc(win) {
     const items = win.ZoteroPane.getSelectedItems();
     const regular = items.filter((it) => it && !it.isAttachment && !it.isNote && !it.isFeedItem);
     if (!regular.length) {
-      notify("litflow", "请先选中文献条目（右键其附件将被处理）。");
+      notify("jinyun", "请先选中文献条目（右键其附件将被处理）。");
       return;
     }
     // 汇总所有条目的文件附件路径
@@ -143,7 +143,7 @@ async function addItemsToAdhoc(win) {
       }
     }
     if (!paths.length) {
-      notify("litflow", "所选条目没有本地文件附件（快照/URL 附件无法作为临时包处理）。");
+      notify("jinyun", "所选条目没有本地文件附件（快照/URL 附件无法作为临时包处理）。");
       return;
     }
     const first = regular[0];
@@ -155,8 +155,8 @@ async function addItemsToAdhoc(win) {
       recursive: false,
       index: true,
     });
-    notify("litflow", `已提交临时语义包「${name}」（${paths.length} 个文件，任务 ${job.id}）`,
-      "扫描版 PDF 将自动走 OCR。进度见 litflow 监管台。");
+    notify("jinyun", `已提交临时语义包「${name}」（${paths.length} 个文件，任务 ${job.id}）`,
+      "扫描版 PDF 将自动走 OCR。进度见 jinyun 监管台。");
   } catch (e) {
     alertError(win, e);
   }
@@ -174,15 +174,15 @@ function configureServer(win) {
   const input = { value: getServerUrl() };
   const ok = Services.prompt.prompt(
     win,
-    "litflow 服务端地址",
-    "litflow 服务端地址（本机或远程机器，如 http://192.168.1.10:8765）：",
+    "jinyun 服务端地址",
+    "jinyun 服务端地址（本机或远程机器，如 http://192.168.1.10:8765）：",
     input,
     null,
     {}
   );
   if (ok && input.value.trim()) {
     setServerUrl(input.value.trim());
-    notify("litflow", `服务端地址已保存：${getServerUrl()}`);
+    notify("jinyun", `服务端地址已保存：${getServerUrl()}`);
   }
 }
 
@@ -191,7 +191,7 @@ async function copyMcpConfig(win) {
     const cfg = await api("GET", "/api/mcp-config");
     const text = JSON.stringify(cfg, null, 2);
     await Zotero.Utilities.Internal.copyTextToClipboard(text);
-    notify("litflow", "MCP 客户端配置已复制到剪贴板", text.replace(/\s+/g, " ").slice(0, 120));
+    notify("jinyun", "MCP 客户端配置已复制到剪贴板", text.replace(/\s+/g, " ").slice(0, 120));
   } catch (e) {
     alertError(win, e);
   }
@@ -200,7 +200,7 @@ async function copyMcpConfig(win) {
 async function checkConnection(win) {
   try {
     const st = await api("GET", "/api/system");
-    notify("litflow", `连接正常（${getServerUrl()}）`,
+    notify("jinyun", `连接正常（${getServerUrl()}）`,
       `内存可用 ${(st.mem_available_mb / 1024).toFixed(1)}GB / 守卫阈值 ${(st.mem_guard_mb / 1024).toFixed(0)}GB，CPU ${st.cpu_percent}%`);
   } catch (e) {
     alertError(win, e);
@@ -213,7 +213,7 @@ async function checkConnection(win) {
 
 function onMainWindowLoad(win) {
   const doc = win.document;
-  if (doc.getElementById("litflow-collection-menuitem")) return; // 幂等
+  if (doc.getElementById("jinyun-collection-menuitem")) return; // 幂等
 
   // ---- 分类右键菜单 ----
   const collMenu =
@@ -221,8 +221,8 @@ function onMainWindowLoad(win) {
     doc.getElementById("collectionContextMenu");
   if (collMenu) {
     const mi = doc.createXULElement("menuitem");
-    mi.id = "litflow-collection-menuitem";
-    mi.setAttribute("label", "litflow：准备/更新语义包（增量）");
+    mi.id = "jinyun-collection-menuitem";
+    mi.setAttribute("label", "jinyun：准备/更新语义包（增量）");
     mi.addEventListener("command", () => prepareCollection(win));
     collMenu.appendChild(mi);
   }
@@ -231,8 +231,8 @@ function onMainWindowLoad(win) {
   const itemMenu = doc.getElementById("zotero-itemmenu");
   if (itemMenu) {
     const mi = doc.createXULElement("menuitem");
-    mi.id = "litflow-item-menuitem";
-    mi.setAttribute("label", "litflow：把附件加入临时语义包");
+    mi.id = "jinyun-item-menuitem";
+    mi.setAttribute("label", "jinyun：把附件加入临时语义包");
     mi.addEventListener("command", () => addItemsToAdhoc(win));
     itemMenu.appendChild(mi);
   }
@@ -241,10 +241,10 @@ function onMainWindowLoad(win) {
   const toolsPopup = doc.getElementById("menu_ToolsPopup");
   if (toolsPopup) {
     const menu = doc.createXULElement("menu");
-    menu.id = "litflow-tools-menu";
-    menu.setAttribute("label", "litflow");
+    menu.id = "jinyun-tools-menu";
+    menu.setAttribute("label", "jinyun");
     const popup = doc.createXULElement("menupopup");
-    popup.id = "litflow-tools-popup";
+    popup.id = "jinyun-tools-popup";
 
     const mk = (label, fn) => {
       const it = doc.createXULElement("menuitem");
@@ -252,10 +252,10 @@ function onMainWindowLoad(win) {
       it.addEventListener("command", fn);
       return it;
     };
-    popup.appendChild(mk("打开 litflow 监管台…", () => openDashboard()));
+    popup.appendChild(mk("打开 jinyun 监管台…", () => openDashboard()));
     popup.appendChild(mk("服务端地址…", () => configureServer(win)));
     popup.appendChild(mk("复制 MCP 客户端配置", () => copyMcpConfig(win)));
-    popup.appendChild(mk("检查 litflow 连接", () => checkConnection(win)));
+    popup.appendChild(mk("检查 jinyun 连接", () => checkConnection(win)));
     // 兜底入口（右键菜单 ID 变化时功能仍可用）
     popup.appendChild(doc.createXULElement("menuseparator"));
     popup.appendChild(
@@ -273,9 +273,9 @@ function onMainWindowLoad(win) {
 function onMainWindowUnload(win) {
   const doc = win.document;
   for (const id of [
-    "litflow-collection-menuitem",
-    "litflow-item-menuitem",
-    "litflow-tools-menu",
+    "jinyun-collection-menuitem",
+    "jinyun-item-menuitem",
+    "jinyun-tools-menu",
   ]) {
     const el = doc.getElementById(id);
     if (el) el.remove();

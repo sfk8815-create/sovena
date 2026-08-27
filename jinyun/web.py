@@ -1,6 +1,6 @@
-"""litflow Web 监管界面（Starlette）。
+"""jinyun Web 监管界面（Starlette）。
 
-与 MCP 服务同进程运行：`python -m litflow.server`
+与 MCP 服务同进程运行：`python -m jinyun.server`
     - Web UI:      http://localhost:8765/
     - MCP 端点:    http://localhost:8765/mcp   （本地及 tailscale 远程 AI 客户端）
 """
@@ -19,7 +19,7 @@ from .pipeline import Pipeline
 from .zotero_collector import ZoteroCollector
 
 UI_PATH = os.path.join(os.path.dirname(__file__), "webui.html")
-DEFAULT_PORT = int(os.environ.get("LITFLOW_PORT", "8765"))
+DEFAULT_PORT = int(os.environ.get("JINYUN_PORT", "8765"))
 
 _packager = Packager()
 _collector = ZoteroCollector()
@@ -190,7 +190,7 @@ async def api_mcp_config(request: Request):
     origin = request.headers.get("host") or f"localhost:{DEFAULT_PORT}"
     cfg = {
         "mcpServers": {
-            "litflow": {"url": f"http://{origin}/mcp"}
+            "jinyun": {"url": f"http://{origin}/mcp"}
         }
     }
     return JSONResponse(cfg)
@@ -249,7 +249,7 @@ async def api_config(_: Request):
         "embed_api": DEFAULT_EMBED_API,
         "embed_model": DEFAULT_EMBED_MODEL,
         "ocr": backend_info(),
-        "host": os.environ.get("LITFLOW_HOST", "0.0.0.0"),
+        "host": os.environ.get("JINYUN_HOST", "0.0.0.0"),
         "port": DEFAULT_PORT,
     })
 

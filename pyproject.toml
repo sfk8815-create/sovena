@@ -1,10 +1,10 @@
 [project]
-name = "litflow"
+name = "jinyun"
 version = "0.1.0"
 description = "Zotero → Markdown 语义文献包 → 向量检索：各学科通用的本地文献流处理与 MCP 服务（含任意文件夹 OCR/索引的 adhoc 临时任务）"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "litflow contributors" }]
+authors = [{ name = "jinyun contributors" }]
 requires-python = ">=3.12"
 dependencies = [
     "einops>=0.8.2",
@@ -25,16 +25,16 @@ dependencies = [
 ]
 
 [project.scripts]
-litflow = "litflow.server:main"
+jinyun = "jinyun.server:main"
 
 [tool.uv]
 package = true
 
 [tool.setuptools]
-packages = ["litflow", "ocr_port"]
+packages = ["jinyun", "ocr_port"]
 
 [tool.setuptools.package-data]
-litflow = ["webui.html"]
+jinyun = ["webui.html"]
 
 [[tool.uv.index]]
 url = "https://pypi.org/simple"

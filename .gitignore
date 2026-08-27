@@ -4,7 +4,7 @@ __pycache__/
 build/
 wheels/
 *.egg-info/
-litflow.egg-info/
+jinyun.egg-info/
 # dist/ 整体忽略，但保留 dist/*.xpi 插件产物
 dist/*
 !dist/*.xpi

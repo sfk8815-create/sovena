@@ -1,13 +1,13 @@
-"""litflow 临时资料处理（ad-hoc）：把任意本地文件/文件夹做成可检索语义包。
+"""jinyun 临时资料处理（ad-hoc）：把任意本地文件/文件夹做成可检索语义包。
 
 适用场景：非 Zotero 资料（如 E_book 电子书库、散装 PDF、讲义等）
 批量转 markdown + 向量索引，之后与 Zotero 分类一样可被自然语言检索。
 
-    python -m litflow.cli adhoc /path/to/dir --name 我的书库
+    python -m jinyun.cli adhoc /path/to/dir --name 我的书库
     （或经 Web UI / MCP 提交）
 
 目录结构：
-  <LITFLOW_ROOT>/adhoc/<名称>/
+  <JINYUN_ROOT>/adhoc/<名称>/
     _manifest.json
     <文件名slug>/
       meta.json

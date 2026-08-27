@@ -1,4 +1,4 @@
-"""litflow OCR 后端抽象。
+"""jinyun OCR 后端抽象。
 
 OCR 通道支持两种后端，输出统一为 Unlimited-OCR 的结构化行格式
 （`kind [x1,y1,x2,y2]text`），下游 converter 无感知：
@@ -9,13 +9,13 @@ OCR 通道支持两种后端，输出统一为 Unlimited-OCR 的结构化行格�
              Windows / Linux / 纯 CPU）
 
 后端选择（环境变量）：
-  LITFLOW_OCR_BACKEND = mlx | http | auto（默认 auto：设置了
-  LITFLOW_OCR_API 就用 http，否则 mlx）
+  JINYUN_OCR_BACKEND = mlx | http | auto（默认 auto：设置了
+  JINYUN_OCR_API 就用 http，否则 mlx）
 
 http 后端相关变量：
-  LITFLOW_OCR_API        服务地址（如 http://localhost:8080/v1）
-  LITFLOW_OCR_MODEL_NAME 模型名（默认 Unlimited-OCR）
-  LITFLOW_OCR_API_KEY    可选 bearer key
+  JINYUN_OCR_API        服务地址（如 http://localhost:8080/v1）
+  JINYUN_OCR_MODEL_NAME 模型名（默认 Unlimited-OCR）
+  JINYUN_OCR_API_KEY    可选 bearer key
 """
 from __future__ import annotations
 
@@ -25,9 +25,9 @@ from typing import Optional
 
 import httpx
 
-DEFAULT_OCR_API = os.environ.get("LITFLOW_OCR_API", "")
-DEFAULT_OCR_MODEL_NAME = os.environ.get("LITFLOW_OCR_MODEL_NAME", "Unlimited-OCR")
-DEFAULT_OCR_API_KEY = os.environ.get("LITFLOW_OCR_API_KEY", "")
+DEFAULT_OCR_API = os.environ.get("JINYUN_OCR_API", "")
+DEFAULT_OCR_MODEL_NAME = os.environ.get("JINYUN_OCR_MODEL_NAME", "Unlimited-OCR")
+DEFAULT_OCR_API_KEY = os.environ.get("JINYUN_OCR_API_KEY", "")
 
 
 class OpenAICompatOCREngine:
@@ -93,8 +93,8 @@ class OpenAICompatOCREngine:
 
 
 def resolve_backend() -> str:
-    """决定 OCR 后端：显式 LITFLOW_OCR_BACKEND 优先，否则按是否配置 API 自动。"""
-    choice = (os.environ.get("LITFLOW_OCR_BACKEND") or "auto").lower()
+    """决定 OCR 后端：显式 JINYUN_OCR_BACKEND 优先，否则按是否配置 API 自动。"""
+    choice = (os.environ.get("JINYUN_OCR_BACKEND") or "auto").lower()
     if choice in ("mlx", "http"):
         return choice
     return "http" if DEFAULT_OCR_API else "mlx"
@@ -108,7 +108,7 @@ def backend_info() -> dict:
         "api": DEFAULT_OCR_API or None,
         "model_name": DEFAULT_OCR_MODEL_NAME if backend == "http" else None,
         "mlx_model_dir": os.path.expanduser(
-            os.environ.get("LITFLOW_OCR_MODEL", "~/models/Unlimited-OCR-MLX")
+            os.environ.get("JINYUN_OCR_MODEL", "~/models/Unlimited-OCR-MLX")
         )
         if backend == "mlx"
         else None,

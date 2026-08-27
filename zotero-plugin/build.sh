@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p ../dist
-rm -f ../dist/litflow-plugin-*.xpi
+rm -f ../dist/jinyun-plugin-*.xpi
 VERSION=$(python3 -c 'import json;print(json.load(open("manifest.json"))["version"])')
-zip -r -X "../dist/litflow-plugin-${VERSION}.xpi" manifest.json bootstrap.js prefs.js -x '*.DS_Store' >/dev/null
-echo "已生成 ../dist/litflow-plugin-${VERSION}.xpi"
+zip -r -X "../dist/jinyun-plugin-${VERSION}.xpi" manifest.json bootstrap.js prefs.js -x '*.DS_Store' >/dev/null
+echo "已生成 ../dist/jinyun-plugin-${VERSION}.xpi"
