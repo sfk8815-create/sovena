@@ -18,7 +18,7 @@
 | Zotero 分类/条目/标注读取 | ✅ | ✅（本地 API，无需 Web API key） |
 | 文献全文获取 | 链接附件路径 | ✅ 转换为 AI 友好 Markdown（含【书页页码】标注） |
 | 扫描/影印 PDF OCR | ❌ | ✅ L2 通道（Unlimited-OCR，MLX / GGUF 双后端，全平台） |
-| 向量语义检索 | ❌ | ✅ LanceDB + LM Studio embedding |
+| 向量语义检索 | ❌ | ✅ LanceDB + 任意 OpenAI 兼容 embedding 服务 |
 | 增量处理 | ❌ | ✅ 条目 version + 附件指纹（mtime）双重检测 |
 | 一键启动 | 多步配置 | ✅ `uv run litflow` 单进程起 Web + MCP |
 | 非 Zotero 资料（任意文件夹） | ❌ | ✅ adhoc 临时资料包（OCR + 索引） |
@@ -31,9 +31,10 @@
 ```
 Zotero(本地API) ─┐
                  ├─ Pipeline.prepare ─┬─ L1 文本路(pymupdf) ─┐
-任意文件/文件夹 ─┘  (增量)             ├─ L2 OCR路(MLX)      ├─ 语义包(content.md+meta.json)
+任意文件/文件夹 ─┘  (增量)             ├─ L2 OCR路(MLX/GGUF) ├─ 语义包(content.md+meta.json)
                                      └─ anydoc(非PDF)      ┘        │
                                                                  LanceDB 向量索引
+                                                       （embedding: 本地/远程 OpenAI 兼容服务）
                                                                      │
                               ┌──────────────────────────────────────┤
                               │                                      │
@@ -44,7 +45,7 @@ Zotero(本地API) ─┐
 - **L1 文本路**：有文本层的 PDF → pymupdf 提取，页码标注优先用 PDF Page Labels（书页页码，非物理页序）
 - **L2 OCR 路**：扫描/影印件 → Unlimited-OCR 结构化识别（MLX / GGUF 双后端），页码优先级：OCR 识别的 page_number > PDF Page Label > 物理页序
 - **非 PDF**：docx / epub / html / txt / md / xlsx / pptx 等 → anydoc / trafilatura
-- **检索**：LM Studio 提供 embedding（如 qwen3-embedding），LanceDB 本地向量库
+- **检索**：任意 OpenAI 兼容 embedding 服务（本地 LM Studio / Ollama，或百炼 / OpenRouter 等远程平台）+ LanceDB 本地向量库
 
 ## OCR 引擎与模型部署
 
@@ -90,7 +91,19 @@ echo 'LITFLOW_OCR_API=http://127.0.0.1:8080/v1' >> .env
 
 > 提示：Q4 量化约 3GB，16GB 内存的普通电脑即可运行。litflow 按需调用（逐页请求），不在 litflow 进程内占内存。
 
-**Embedding 模型（检索用，必须）**：LM Studio → 搜索 `qwen3-embedding-4b` → 下载并加载 → 保持 LM Studio 本地服务开启（默认 `http://localhost:1234/v1`）。litflow 经 HTTP 调用它做向量化。
+**Embedding 服务（检索用，必须）**——任意 OpenAI 兼容 `/embeddings` 接口均可，二选一：
+
+- **本地**（推荐，免费私密）：LM Studio → 搜索 `qwen3-embedding-4b` → 下载加载 → 保持本地服务开启（默认 `http://localhost:1234/v1`）。Ollama / vLLM 等同理
+- **远程商用平台**（不想本地跑模型）：阿里云百炼 / OpenRouter / SiliconFlow 等，只需在 `.env` 填 API 地址与密钥：
+
+```dotenv
+# 示例：阿里云百炼（OpenAI 兼容端点）
+LITFLOW_EMBED_API=https://dashscope.aliyuncs.com/compatible-mode/v1
+LITFLOW_EMBED_API_KEY=sk-你的密钥
+LITFLOW_EMBED_MODEL=text-embedding-v4
+```
+
+> 注意：更换 embedding 服务/模型后向量维度与语义空间会变化，已有索引需重建（litflow 检测到维度不匹配会明确提示；删除 `_lancedb` 目录后重新「准备」各分类，或勾选「全量重建」）。
 
 ## 快速开始（新手保姆级）
 
@@ -112,12 +125,13 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 - litflow 通过 Zotero 的**本地 API** 读取（Zotero 打开着就自动可用，无需任何设置）
 - 附件可以是「导入的附件」或「链接附件」，两种都支持
 
-### 第 3 步：装 LM Studio 并下载两个模型（检索必需 + OCR 可选）
+### 第 3 步：准备模型服务（检索必需 + OCR 可选）
 
-到 [lmstudio.ai](https://lmstudio.ai/) 下载安装 LM Studio：
+**embedding 服务（检索必需）**，二选一：
+- **本地（推荐）**：到 [lmstudio.ai](https://lmstudio.ai/) 装 LM Studio → 搜索 `qwen3-embedding-4b` → 下载 → 加载到内存 → 顶部「Developer」标签确认本地服务已启动。Ollama / vLLM 等其他本地方案同理
+- **远程平台（不在本地跑模型）**：阿里云百炼 / OpenRouter 等，在项目根目录建 `.env` 填地址与密钥（见上节「Embedding 服务」的示例）
 
-1. **embedding 模型（检索必需）**：LM Studio 里搜索 `qwen3-embedding-4b` → 下载 → 加载到内存 → 顶部「Developer」标签确认本地服务已启动
-2. **OCR 模型（仅扫描件需要，Apple Silicon）**：搜索 `Unlimited-OCR-MLX` → 下载即可（litflow 需要时会自己加载/释放，不用在 LM Studio 里常驻）
+**OCR 模型（仅扫描件需要，Apple Silicon）**：LM Studio 里搜索 `Unlimited-OCR-MLX` → 下载即可（litflow 需要时会自己加载/释放，不用在 LM Studio 里常驻）
 
 > **非 Apple Silicon 电脑**做 OCR：LM Studio 只是路径之一，改用「GGUF 后端」更通用——下载 [Unlimited-OCR-GGUF](https://huggingface.co/sahilchachra/Unlimited-OCR-GGUF) + 跑 llama-server，配置见上节「后端二」。
 > 只想快速体验、暂时不检索？LM Studio 可以后补，先跳过做第 4-5 步。
@@ -166,7 +180,7 @@ Web 台「Zotero 文献流」→ 选一个**小分类**（如 5 条文献）→�
 | 提示 `uv: command not found` | 第 1 步的 uv 没装好或没重开终端 |
 | 提示端口被占用 | 旧服务没关：`lsof -ti tcp:8765 \| xargs kill` 后重启 |
 | 「Zotero 连接失败」 | Zotero 没打开，或装的是旧版（需 7.0+） |
-| 检索报错/无结果 | LM Studio 没开服务、embedding 模型没加载；或该分类还没「准备」过 |
+| 检索报错/无结果 | embedding 服务没开/密钥不对（本地 LM Studio 或远程平台），或该分类还没「准备」过；换过 embedding 模型需重建索引 |
 | OCR 报模型错误 | MLX 后端：没下载 `Unlimited-OCR-MLX` 或路径不对；http 后端：llama-server 没启动或 `LITFLOW_OCR_API` 填错（见上节） |
 | 机器风扇狂转 | 正常：OCR 任务较重；任务结束模型会自动卸载 |
 
@@ -215,7 +229,8 @@ LITFLOW_ZOTERO_API=http://localhost:23119/api
 | `LITFLOW_ZOTERO_API` | `http://localhost:23119/api` | Zotero 本地 API |
 | `LITFLOW_HOST` | `0.0.0.0` | 服务监听地址 |
 | `LITFLOW_PORT` | `8765` | 服务端口 |
-| `LITFLOW_LMSTUDIO` | LM Studio 本地 embedding 地址 | 向量化服务 |
+| `LITFLOW_EMBED_API` | `http://localhost:1234/v1` | embedding 服务地址（本地 LM Studio/Ollama 或远程平台；旧名 `LITFLOW_LMSTUDIO` 仍有效） |
+| `LITFLOW_EMBED_API_KEY` | （空） | embedding 服务密钥（远程商用平台必填） |
 | `LITFLOW_EMBED_MODEL` | `text-embedding-qwen3-embedding-4b` | embedding 模型名 |
 | `LITFLOW_LANCEDB` | `$LITFLOW_ROOT/_lancedb` | 向量库目录 |
 | `LITFLOW_OCR_BACKEND` | `auto` | OCR 后端：`mlx` / `http` / `auto`（设了 `LITFLOW_OCR_API` 则自动 http） |

@@ -12,7 +12,7 @@ import time
 from typing import Callable, Optional
 
 from .converter import ConvertResult, convert_attachment
-from .indexer import LMStudioEmbedder, VectorIndex, chunk_markdown
+from .indexer import Embedder, VectorIndex, chunk_markdown
 from .ocr_backends import resolve_backend
 from .packager import Packager, file_fingerprint, md5_of_file
 from .zotero_collector import LitRecord, ZoteroCollector
@@ -63,13 +63,13 @@ class Pipeline:
         collector: Optional[ZoteroCollector] = None,
         packager: Optional[Packager] = None,
         index: Optional[VectorIndex] = None,
-        embedder: Optional[LMStudioEmbedder] = None,
+        embedder: Optional[Embedder] = None,
         ocr: Optional[OCREngineHolder] = None,
     ):
         self.collector = collector or ZoteroCollector()
         self.packager = packager or Packager()
         self.index = index or VectorIndex()
-        self.embedder = embedder or LMStudioEmbedder()
+        self.embedder = embedder or Embedder()
         self.ocr = ocr or OCREngineHolder()
 
     # ------------------------------------------------------------------

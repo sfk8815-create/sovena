@@ -291,7 +291,7 @@
 <section class="tabpane" id="pane-search">
   <div class="card">
     <h2>自然语言检索</h2>
-    <div class="hint">检索所有已就绪的语义包（Zotero 分类 + 临时资料包）；需 LM Studio embedding 服务在线</div>
+    <div class="hint">检索所有已就绪的语义包（Zotero 分类 + 临时资料包）；需 embedding 服务在线（本地或远程均可）</div>
     <div class="row">
       <input type="text" class="wide" id="q" placeholder="如：古琴音色的声学分析 / 琴徽定音之法">
       <select id="qColl" style="min-width:180px"><option value="">全部分类</option></select>
@@ -656,7 +656,7 @@ async function loadConfig() {
     const items = [
       ['语义包根目录', c.root, 'LITFLOW_ROOT'],
       ['Zotero 本地 API', c.zotero_api, 'LITFLOW_ZOTERO_API'],
-      ['LM Studio embedding', c.lmstudio, 'LITFLOW_LMSTUDIO'],
+      ['Embedding 服务', c.embed_api || c.lmstudio, 'LITFLOW_EMBED_API（+ LITFLOW_EMBED_API_KEY）'],
       ['向量模型', c.embed_model, 'LITFLOW_EMBED_MODEL'],
       ['OCR 后端', ocrDesc, 'LITFLOW_OCR_BACKEND / LITFLOW_OCR_API'],
       ['LanceDB 目录', c.lancedb, 'LITFLOW_LANCEDB'],

@@ -417,7 +417,7 @@ def litflow_adhoc_list() -> str:
 
 @mcp.tool
 def litflow_doctor() -> str:
-    """诊断系统连通性：Zotero API、LM Studio embedding、输出目录权限。"""
+    """诊断系统连通性：Zotero API、embedding 服务、输出目录权限、OCR 后端。"""
     lines = []
     # Zotero
     try:
@@ -425,12 +425,12 @@ def litflow_doctor() -> str:
         lines.append(f"✓ Zotero 本地 API 在线（{len(colls)} 个分类）")
     except Exception as e:  # noqa: BLE001
         lines.append(f"✗ Zotero 本地 API 不可达：{e}")
-    # LM Studio
+    # embedding 服务（本地 LM Studio/Ollama 或远程商用平台）
     try:
         models = _pipe.embedder.embed(["诊断"])
-        lines.append(f"✓ LM Studio embedding 在线（{models.shape[1]} 维）")
+        lines.append(f"✓ embedding 服务在线（{_pipe.embedder.model}，{models.shape[1]} 维）")
     except Exception as e:  # noqa: BLE001
-        lines.append(f"✗ LM Studio embedding 不可达：{e}")
+        lines.append(f"✗ embedding 服务不可达（{_pipe.embedder.base_url}）：{e}")
     # 输出目录
     root = _packager.root
     try:

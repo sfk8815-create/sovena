@@ -222,7 +222,7 @@ def api_search(request: Request):  # 同步 endpoint：starlette 自动放线程
         hits = _search_pipe.search(q, collection=coll, top_k=top_k)
     except Exception as e:  # noqa: BLE001
         return JSONResponse(
-            {"error": f"检索失败（LM Studio embedding 服务是否在线？）: {e}"},
+            {"error": f"检索失败（embedding 服务是否在线/密钥正确？）: {e}"},
             status_code=502,
         )
     return JSONResponse({"query": q, "collection": coll, "hits": hits})
@@ -238,7 +238,7 @@ async def api_system(_: Request):
 
 async def api_config(_: Request):
     """只读配置信息（修改需设置环境变量后重启服务）。"""
-    from .indexer import DEFAULT_DB_PATH, DEFAULT_EMBED_MODEL, DEFAULT_LMSTUDIO
+    from .indexer import DEFAULT_DB_PATH, DEFAULT_EMBED_API, DEFAULT_EMBED_MODEL
     from .ocr_backends import backend_info
     from .zotero_collector import DEFAULT_API
 
@@ -246,7 +246,7 @@ async def api_config(_: Request):
         "root": _packager.root,
         "lancedb": DEFAULT_DB_PATH,
         "zotero_api": DEFAULT_API,
-        "lmstudio": DEFAULT_LMSTUDIO,
+        "embed_api": DEFAULT_EMBED_API,
         "embed_model": DEFAULT_EMBED_MODEL,
         "ocr": backend_info(),
         "host": os.environ.get("LITFLOW_HOST", "0.0.0.0"),

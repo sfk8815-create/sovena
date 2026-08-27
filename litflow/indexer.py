@@ -1,6 +1,8 @@
-"""litflow 向量索引与自然语言检索（LanceDB + LM Studio embedding）。
+"""litflow 向量索引与自然语言检索（LanceDB + OpenAI 兼容 embedding 服务）。
 
-- 嵌入模型：LM Studio OpenAI 兼容 API（默认 qwen3-embedding-4b，2560 维）
+- 嵌入服务：任意 OpenAI 兼容 /embeddings 接口——本地 LM Studio / Ollama /
+  vLLM / llama-server，或远程商用平台（阿里云百炼、OpenRouter、SiliconFlow
+  等），均只需填 API 地址与密钥（LITFLOW_EMBED_API / LITFLOW_EMBED_API_KEY）
 - 分块：按页码标注切块（页边界优先，块内保留页码上下文）
 - 检索：cos 相似度 + 元数据过滤（分类/标题/年份）
 """
@@ -19,7 +21,11 @@ import numpy as np
 
 PAGE_MARK = re.compile(r"\*\*\[p\.([^\]]+)\]\*\*")
 
-DEFAULT_LMSTUDIO = os.environ.get("LITFLOW_LMSTUDIO", "http://localhost:1234/v1")
+# 兼容旧变量名 LITFLOW_LMSTUDIO（等价新名 LITFLOW_EMBED_API）
+DEFAULT_EMBED_API = os.environ.get("LITFLOW_EMBED_API") or os.environ.get(
+    "LITFLOW_LMSTUDIO", "http://localhost:1234/v1"
+)
+DEFAULT_EMBED_API_KEY = os.environ.get("LITFLOW_EMBED_API_KEY", "")
 DEFAULT_EMBED_MODEL = os.environ.get(
     "LITFLOW_EMBED_MODEL", "text-embedding-qwen3-embedding-4b"
 )
@@ -109,25 +115,33 @@ def chunk_markdown(
 # 嵌入客户端
 # ---------------------------------------------------------------------------
 
-class LMStudioEmbedder:
+class Embedder:
+    """OpenAI 兼容 embedding 客户端（本地或远程商用平台均可）。"""
+
     def __init__(
         self,
-        base_url: str = DEFAULT_LMSTUDIO,
+        base_url: str = DEFAULT_EMBED_API,
         model: str = DEFAULT_EMBED_MODEL,
+        api_key: str = DEFAULT_EMBED_API_KEY,
         batch: int = 32,
         timeout: float = 120.0,
     ):
         self.base_url = base_url.rstrip("/")
         self.model = model
+        self.api_key = api_key
         self.batch = batch
         self._client = httpx.Client(timeout=timeout)
 
     def embed(self, texts: list[str]) -> np.ndarray:
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
         out = []
         for i in range(0, len(texts), self.batch):
             r = self._client.post(
                 f"{self.base_url}/embeddings",
                 json={"model": self.model, "input": texts[i : i + self.batch]},
+                headers=headers,
             )
             r.raise_for_status()
             data = r.json()["data"]
@@ -157,6 +171,7 @@ SCHEMA = [
 
 class VectorIndex:
     def __init__(self, db_path: str = DEFAULT_DB_PATH, table: str = "chunks"):
+        self.db_path = db_path
         self.db = lancedb.connect(db_path)
         self.table_name = table
         self._table = None
@@ -207,12 +222,24 @@ class VectorIndex:
         sel = tbl.filter(pc.equal(col, collection))
         return set(sel.column("item_key").to_pylist())
 
-    def add_chunks(self, chunks: list[Chunk], embedder: LMStudioEmbedder) -> int:
+    def add_chunks(self, chunks: list[Chunk], embedder: Embedder) -> int:
         if not chunks:
             return 0
         vecs = embedder.embed([c.text for c in chunks])
         import pyarrow as pa
 
+        # 换 embedding 模型（如改用远程平台）会导致向量维度/语义空间不一致，
+        # 已有索引不可混用——给出可执行的修复指引而不是让 LanceDB 报晦涩错误。
+        t = self._get_table()
+        if t is not None:
+            old_dim = t.schema.field("vector").type.list_size
+            if old_dim != vecs.shape[1]:
+                raise RuntimeError(
+                    f"embedding 维度不匹配：索引已按 {old_dim} 维建立，当前服务返回 "
+                    f"{vecs.shape[1]} 维（模型 {embedder.model}）。更换 embedding "
+                    "服务/模型后需重建索引：删除向量库目录后重新「准备」各分类，"
+                    f"或在 Web 勾选「全量重建」。目录：{self.db_path}"
+                )
         data = pa.table(
             {
                 "vector": pa.array(vecs.tolist(), type=pa.list_(pa.float32(), vecs.shape[1])),
@@ -235,7 +262,7 @@ class VectorIndex:
     def search(
         self,
         query: str,
-        embedder: LMStudioEmbedder,
+        embedder: Embedder,
         collection: Optional[str] = None,
         top_k: int = 8,
     ) -> list[dict]:
