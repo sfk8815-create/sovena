@@ -1,4 +1,4 @@
-"""jinyun MCP 服务：把文献流能力以 MCP 工具形式暴露给 AI 客户端。
+"""缙云文献流（jinyun）MCP 服务：把文献流能力以 MCP 工具形式暴露给 AI 客户端。
 
 与 Web UI 同进程同端口：
     python -m jinyun.server   （或 uv run jinyun serve）
@@ -45,7 +45,7 @@ from .zotero_collector import ZoteroCollector
 mcp = FastMCP(
     "jinyun",
     instructions=(
-        "jinyun：学科学术文献流服务（人文/社科/理工/医学等通用）。工作流程：① zotero_collections / zotero_search "
+        "缙云文献流（jinyun）：学科学术文献流服务（人文/社科/理工/医学等通用）。工作流程：① zotero_collections / zotero_search "
         "找到 Zotero 分类或条目；② jinyun_prepare 把分类转换为语义文献包并建向量索引"
         "（默认增量，大分类耗时长，可传 wait=False 后台执行并用 jinyun_job_status 轮询）；"
         "③ jinyun_search 做自然语言检索（支持跨语言，命中带原书页码 page 字段）；"

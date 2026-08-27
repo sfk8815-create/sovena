@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "jinyun",
+  "name": "缙云文献流 Jinyun",
   "version": "0.1.0",
-  "description": "jinyun 文献流：把 Zotero 分类/条目交给 jinyun 服务端，一键生成可检索语义包（OCR + 向量索引）。远程电脑亦可：填写服务端地址即可。",
+  "description": "缙云文献流：把 Zotero 分类/条目交给 jinyun 服务端，一键生成可检索语义包（OCR + 向量索引）。远程电脑亦可：填写服务端地址即可。",
   "author": "jinyun contributors",
   "icons": {},
   "applications": {

@@ -222,7 +222,7 @@ function onMainWindowLoad(win) {
   if (collMenu) {
     const mi = doc.createXULElement("menuitem");
     mi.id = "jinyun-collection-menuitem";
-    mi.setAttribute("label", "jinyun：准备/更新语义包（增量）");
+    mi.setAttribute("label", "准备/更新语义包（增量）");
     mi.addEventListener("command", () => prepareCollection(win));
     collMenu.appendChild(mi);
   }
@@ -232,7 +232,7 @@ function onMainWindowLoad(win) {
   if (itemMenu) {
     const mi = doc.createXULElement("menuitem");
     mi.id = "jinyun-item-menuitem";
-    mi.setAttribute("label", "jinyun：把附件加入临时语义包");
+    mi.setAttribute("label", "把附件加入临时语义包");
     mi.addEventListener("command", () => addItemsToAdhoc(win));
     itemMenu.appendChild(mi);
   }
@@ -242,7 +242,7 @@ function onMainWindowLoad(win) {
   if (toolsPopup) {
     const menu = doc.createXULElement("menu");
     menu.id = "jinyun-tools-menu";
-    menu.setAttribute("label", "jinyun");
+    menu.setAttribute("label", "缙云文献流");
     const popup = doc.createXULElement("menupopup");
     popup.id = "jinyun-tools-popup";
 
