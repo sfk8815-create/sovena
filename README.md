@@ -9,7 +9,7 @@
 - **古籍/影印本数字化**：扫描版 PDF 自动走 OCR 通道，还原标题、表格、双栏版式为结构化文本
 - **Zotero 之外的资料**：电子书库、散装 PDF、讲义等任意文件夹，做成同样可检索的临时资料包（adhoc）
 - **AI 深度阅读外脑**：Claude Desktop / Cherry Studio / Trae 等客户端经 MCP 直接查你的文献库，回答带出处
-- **远程协作**：服务端跑在一台 Mac（如 Mac Studio）上，家里/办公室其他电脑填个 URL 就能用
+- **远程协作**：服务端部署在任意满足运行条件的电脑上（家中/实验室/云端均可），其他电脑在 AI 客户端里填服务端 URL 即可使用
 
 对标 [cookjohn/zotero-mcp](https://github.com/cookjohn/zotero-mcp)，并在其基础上扩展为完整的「文献流」：
 
@@ -65,7 +65,7 @@ LITFLOW_OCR_MODEL=/path/to/Unlimited-OCR-MLX
 
 ## 快速开始（新手保姆级）
 
-要求：macOS（Apple Silicon，OCR 通道依赖 MLX）、Python ≥ 3.12。全程只需复制粘贴命令。
+要求：任意电脑均可部署，核心流程只需 Python ≥ 3.12（Windows / macOS / Linux 通用）；**OCR 通道**依赖 MLX 框架，仅支持 Apple Silicon Mac。全程只需复制粘贴命令。
 
 ### 第 1 步：装 uv（Python 包管理器，一次性）
 
@@ -99,6 +99,8 @@ git clone https://github.com/<you>/litflow.git
 cd litflow
 uv sync        # 自动下载全部依赖（首次约 1.3GB，需要几分钟）
 ```
+
+> 非 Apple Silicon 电脑（Windows / Linux / Intel Mac）：MLX 相关依赖仅在用到 OCR 通道时才需要，`uv sync` 在这些平台会自动跳过或用 CPU 兼容版本安装；文本 PDF、非 PDF 文档转换、检索等核心功能均可正常使用。
 
 ### 第 5 步：一键启动
 
