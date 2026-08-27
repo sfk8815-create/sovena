@@ -1,0 +1,25 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info/
+litflow.egg-info/
+
+# Virtual environments
+.venv
+
+# 环境与密钥（勿提交本地配置）
+.env
+.env.*
+
+# 编辑器/系统
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# 本地数据与缓存
+*.log
+.cache/
