@@ -352,4 +352,4 @@ litflow 站在以下项目肩膀上，深表感谢：
 
 ## License
 
-MIT
+MIT © litflow contributors、西南大学·艺术人类学研究所、西南大学·中国音乐心理健康研究所
