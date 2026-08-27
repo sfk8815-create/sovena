@@ -25,9 +25,7 @@ DEFAULT_EMBED_MODEL = os.environ.get(
 )
 # 向量库默认跟随 LITFLOW_ROOT（仅设置 LITFLOW_ROOT 也可整体迁移）
 DEFAULT_DB_PATH = os.environ.get("LITFLOW_LANCEDB") or os.path.join(
-    os.environ.get(
-        "LITFLOW_ROOT", "/Volumes/macstudio-work/synology_drive/zotero_AI"
-    ),
+    os.environ.get("LITFLOW_ROOT") or os.path.expanduser("~/litflow_data"),
     "_lancedb",
 )
 

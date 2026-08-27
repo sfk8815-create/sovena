@@ -1,6 +1,6 @@
 """litflow 语义文献包落盘。
 
-目录结构（根目录默认 /Volumes/macstudio-work/synology_drive/zotero_AI）：
+目录结构（根目录默认 ~/litflow_data，可用 LITFLOW_ROOT 覆盖）：
   <根>/<分类名>/
     _manifest.json                 # 分类级清单（条目 ↔ 包目录、状态）
     <作者>_<年份>_<标题slug>/
@@ -20,8 +20,8 @@ from typing import Optional
 from .converter import ConvertResult
 from .zotero_collector import LitRecord
 
-DEFAULT_ROOT = os.environ.get(
-    "LITFLOW_ROOT", "/Volumes/macstudio-work/synology_drive/zotero_AI"
+DEFAULT_ROOT = os.environ.get("LITFLOW_ROOT") or os.path.expanduser(
+    "~/litflow_data"
 )
 
 

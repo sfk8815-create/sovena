@@ -231,9 +231,7 @@ def get_manager() -> JobManager:
 
 def system_status() -> dict:
     vm = psutil.virtual_memory()
-    root = os.environ.get(
-        "LITFLOW_ROOT", "/Volumes/macstudio-work/synology_drive/zotero_AI"
-    )
+    root = os.environ.get("LITFLOW_ROOT") or os.path.expanduser("~/litflow_data")
     disk = None
     try:
         p = root if os.path.isdir(root) else os.path.expanduser("~")

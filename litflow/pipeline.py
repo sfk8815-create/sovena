@@ -18,8 +18,9 @@ from .zotero_collector import LitRecord, ZoteroCollector
 
 OCR_MODEL_DIR = os.environ.get(
     "LITFLOW_OCR_MODEL",
-    "/Users/sfk-studio/.lmstudio/models/LoJexLLM/Unlimited-OCR-MLX",
+    "~/.lmstudio/models/LoJexLLM/Unlimited-OCR-MLX",
 )
+OCR_MODEL_DIR = os.path.expanduser(OCR_MODEL_DIR)
 
 ProgressFn = Callable[[str, dict], None]
 

@@ -95,9 +95,16 @@ bash zotero-plugin/build.sh    # 产出 dist/litflow-plugin-<version>.xpi
 
 ## 环境变量
 
+所有配置均可用环境变量设置；**推荐**在项目根目录建一个 `.env` 文件（已被 `.gitignore` 忽略，适合放个人路径），服务启动时自动加载：
+
+```dotenv
+LITFLOW_ROOT=/Volumes/your-disk/zotero_AI
+LITFLOW_ZOTERO_API=http://localhost:23119/api
+```
+
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `LITFLOW_ROOT` | `/Volumes/macstudio-work/synology_drive/zotero_AI` | 语义文献包根目录（其他机器部署时必须改；LanceDB 默认随之） |
+| `LITFLOW_ROOT` | `~/litflow_data` | 语义文献包根目录（**个人部署建议在 `.env` 里设置**；LanceDB 默认随之） |
 | `LITFLOW_ZOTERO_API` | `http://localhost:23119/api` | Zotero 本地 API |
 | `LITFLOW_HOST` | `0.0.0.0` | 服务监听地址 |
 | `LITFLOW_PORT` | `8765` | 服务端口 |
@@ -117,7 +124,7 @@ Web 台选择分类 →「启动准备」；或让 AI 客户端调用 MCP 工具
 把电子书库、散装 PDF、讲义等做成可检索语义包：
 
 - **Web 台**：「临时资料包」卡片填路径（多个用换行或 `;` 分隔）→ 提交，之后可与 Zotero 分类一起被语义检索
-- **MCP**：`litflow_adhoc_process(paths=["/Volumes/.../E_book/某子目录"], name="我的书库")`
+- **MCP**：`litflow_adhoc_process(paths=["/path/to/E_book/某子目录"], name="我的书库")`
 - **REST**：`POST /api/adhoc/submit` `{"paths": [...], "name": "..."}`
 
 支持 pdf/epub/docx/html/txt/md/xlsx/pptx 等；扫描版 PDF 自动走 OCR；同样支持增量（源文件 mtime 不变则跳过）。
@@ -172,7 +179,7 @@ $LITFLOW_ROOT/
 litflow/
   main.py                  # 一键启动入口
   litflow/
-    server.py              # 服务总入口（Web + MCP 同进程）
+    server.py              # 服务总入口（Web + MCP 同进程，自动加载 .env）
     web.py / webui.html    # Web 监管台（分区 Tab + 路径选择器）
     mcp_server.py          # MCP 工具集
     zotero_collector.py    # Zotero 本地 API 采集（附件 4 路解析）
@@ -185,7 +192,7 @@ litflow/
   zotero-plugin/           # Zotero 客户端插件源码（bootstrap 结构）
   dist/                    # 构建产物（litflow-plugin-<version>.xpi）
   ocr_port/                # Unlimited-OCR-MLX（MLX OCR 引擎）
-  tests/                   # 开发期验证脚本（P0 环境探针/样张测试）
+  .env                     # 本地个人配置（可选，不入库）
 ```
 
 ## License
