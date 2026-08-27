@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>litflow 文献流监管台</title>
+<style>
+  :root {
+    --bg:#f4f6f9; --card:#fff; --ink:#1a2430; --mut:#77828e; --line:#e6eaf0;
+    --acc:#2563eb; --acc-soft:#eaf1fe; --ok:#059669; --ok-soft:#d9f3e8;
+    --warn:#b45309; --warn-soft:#fdf0dd; --err:#dc2626; --err-soft:#fde3e3;
+    --radius:12px; --shadow:0 1px 2px rgba(16,24,40,.04), 0 1px 6px rgba(16,24,40,.04);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font:14px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--ink); }
+
+  /* ---------- 顶栏 ---------- */
+  header {
+    position:sticky; top:0; z-index:50; background:#fff; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; padding:12px 28px;
+  }
+  .brand { display:flex; align-items:baseline; gap:10px; }
+  .brand .logo { width:26px; height:26px; border-radius:8px; align-self:center;
+    background:linear-gradient(135deg,#2563eb,#7c3aed); display:inline-flex; align-items:center; justify-content:center;
+    color:#fff; font-size:14px; font-weight:700; }
+  .brand h1 { font-size:17px; font-weight:650; letter-spacing:.5px; }
+  .brand .sub { color:var(--mut); font-size:12px; }
+  .head-right { display:flex; align-items:center; gap:10px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; background:var(--acc-soft); color:var(--acc);
+    padding:4px 12px; border-radius:99px; font-size:12px; font-family:ui-monospace,Menlo,monospace; }
+  .dot { width:7px; height:7px; border-radius:99px; background:var(--ok); }
+  .dot.off { background:var(--err); }
+
+  /* ---------- Tab 导航 ---------- */
+  nav.tabs { display:flex; gap:4px; background:#fff; border-bottom:1px solid var(--line);
+    padding:0 28px; position:sticky; top:53px; z-index:49; overflow-x:auto; }
+  nav.tabs button {
+    border:0; background:none; padding:12px 16px; font-size:14px; color:var(--mut); cursor:pointer;
+    border-bottom:2px solid transparent; white-space:nowrap; display:flex; align-items:center; gap:6px;
+  }
+  nav.tabs button:hover { color:var(--ink); }
+  nav.tabs button.active { color:var(--acc); border-bottom-color:var(--acc); font-weight:600; }
+  nav.tabs .badge { background:var(--warn-soft); color:var(--warn); border-radius:99px;
+    font-size:11px; padding:0 7px; display:none; }
+  nav.tabs .badge.show { display:inline-block; }
+
+  main { max-width:1180px; margin:0 auto; padding:22px 24px 70px; }
+  .tabpane { display:none; }
+  .tabpane.active { display:block; animation:fade .18s ease; }
+  @keyframes fade { from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:none;} }
+
+  /* ---------- 卡片 ---------- */
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:18px 20px; margin-bottom:18px; }
+  .card h2 { font-size:15px; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+  .card .hint { color:var(--mut); font-size:12px; margin-bottom:14px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:900px){ .grid2 { grid-template-columns:1fr; } }
+
+  /* ---------- 统计瓦片 ---------- */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin-bottom:18px; }
+  .tile { background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:14px 16px; }
+  .tile .k { color:var(--mut); font-size:12px; display:flex; justify-content:space-between; }
+  .tile .v { font-size:24px; font-weight:700; margin-top:2px; }
+  .tile .v small { font-size:12px; color:var(--mut); font-weight:400; }
+  .tile .sub { font-size:11px; color:var(--mut); margin-top:2px; }
+  .tile.low .v { color:var(--err); }
+
+  /* ---------- 表单 ---------- */
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  label { font-size:13px; color:var(--ink); }
+  input[type=text], input[type=number], select {
+    padding:8px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px;
+    background:#fff; transition:border .15s; min-width:0;
+  }
+  input[type=text]:focus, input[type=number]:focus, select:focus { outline:none; border-color:var(--acc); }
+  input[type=text].wide { flex:1; min-width:220px; font-family:ui-monospace,Menlo,monospace; font-size:13px; }
+  input[type=checkbox] { accent-color:var(--acc); }
+  .btn { padding:8px 18px; border:0; border-radius:8px; background:var(--acc); color:#fff;
+    font-size:14px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+  .btn:hover { filter:brightness(.94); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn.ghost { background:#eef2f7; color:var(--ink); }
+  .btn.danger { background:var(--err); }
+  .btn.sm { padding:4px 12px; font-size:13px; }
+
+  /* ---------- 路径行 ---------- */
+  .pathlist { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+  .pathrow { display:flex; gap:8px; }
+  .pathrow input { flex:1; font-family:ui-monospace,Menlo,monospace; font-size:13px; }
+  .pathrow .btn.sm { flex-shrink:0; }
+
+  /* ---------- 表格 ---------- */
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--mut); font-weight:500; white-space:nowrap; }
+  tr:last-child td { border-bottom:0; }
+  .mono { font-family:ui-monospace,Menlo,monospace; font-size:12px; }
+  .tag { display:inline-block; padding:1px 9px; border-radius:99px; font-size:12px; white-space:nowrap; }
+  .tag.ok { background:var(--ok-soft); color:var(--ok); }
+  .tag.empty { background:#f1f3f6; color:var(--mut); }
+  .tag.queued,.tag.deferred { background:var(--warn-soft); color:var(--warn); }
+  .tag.running { background:var(--acc-soft); color:var(--acc); }
+  .tag.error,.tag.cancelled { background:var(--err-soft); color:var(--err); }
+  .tag.text { background:#e5e9ff; color:#4338ca; }
+  .tag.ocr { background:#fbe4f0; color:#9d174d; }
+  .tag.web { background:#d2f3ee; color:#0f766e; }
+  .tag.skip { background:#f1f3f6; color:var(--mut); }
+
+  /* ---------- 检索结果 ---------- */
+  .hit { border-bottom:1px solid var(--line); padding:12px 2px; }
+  .hit:last-child { border-bottom:0; }
+  .hit .meta { color:var(--mut); font-size:12px; margin-bottom:2px; }
+  .hit .frag { font-size:13px; line-height:1.8; }
+  .hit mark { background:#fde68a; padding:0 2px; border-radius:3px; }
+
+  /* ---------- 日志/进度 ---------- */
+  .bar { height:6px; background:#eef2f7; border-radius:99px; overflow:hidden; margin-top:4px; }
+  .bar > div { height:100%; background:var(--acc); transition:width .4s; }
+  .logline { color:var(--mut); font-size:12px; font-family:ui-monospace,Menlo,monospace;
+    max-width:360px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* ---------- 图表 ---------- */
+  .chartwrap { position:relative; height:150px; }
+  canvas#resChart { width:100%; height:150px; }
+  .legend { display:flex; gap:16px; font-size:12px; color:var(--mut); margin-top:6px; }
+  .legend i { display:inline-block; width:10px; height:3px; border-radius:2px; margin-right:5px; vertical-align:middle; }
+
+  /* ---------- 弹窗 ---------- */
+  .overlay { position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:100;
+    display:none; align-items:center; justify-content:center; padding:24px; }
+  .overlay.show { display:flex; }
+  .modal { background:#fff; border-radius:14px; box-shadow:0 20px 60px rgba(2,6,23,.3);
+    width:640px; max-width:96vw; max-height:86vh; display:flex; flex-direction:column; overflow:hidden; }
+  .modal header { position:static; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .modal header h3 { font-size:15px; }
+  .modal .body { padding:14px 18px; overflow:auto; }
+  .modal footer { padding:12px 18px; border-top:1px solid var(--line); display:flex; gap:10px; justify-content:flex-end; }
+
+  /* 路径选择器 */
+  .picker-crumbs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+  .picker-crumbs .crumb { background:#f1f4f8; border:0; border-radius:6px; padding:3px 10px;
+    font-size:12px; cursor:pointer; color:var(--ink); }
+  .picker-crumbs .crumb:hover { background:var(--acc-soft); }
+  .picker-quick { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .picker-quick .crumb { background:var(--acc-soft); color:var(--acc); border:0; border-radius:99px;
+    padding:2px 12px; font-size:12px; cursor:pointer; }
+  .picker-list { border:1px solid var(--line); border-radius:8px; max-height:340px; overflow:auto; }
+  .picker-item { display:flex; justify-content:space-between; align-items:center; padding:7px 12px;
+    cursor:pointer; font-size:13px; border-bottom:1px solid #f0f2f5; }
+  .picker-item:hover { background:var(--acc-soft); }
+  .picker-item:last-child { border-bottom:0; }
+  .picker-item .ic { margin-right:8px; }
+  .picker-item.sel { background:var(--acc-soft); color:var(--acc); font-weight:600; }
+  .picker-path-input { width:100%; font-family:ui-monospace,Menlo,monospace; font-size:13px; margin-bottom:12px; }
+
+  /* 内容查看器 */
+  .viewer-pre { white-space:pre-wrap; font-family:ui-monospace,Menlo,monospace; font-size:12px;
+    line-height:1.8; max-height:60vh; overflow:auto; background:#f8fafc; padding:14px; border-radius:8px; }
+
+  /* ---------- 设置 ---------- */
+  .cfg-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
+  .cfg-item { background:#f8fafc; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .cfg-item .k { color:var(--mut); font-size:12px; }
+  .cfg-item .v { font-family:ui-monospace,Menlo,monospace; font-size:13px; margin-top:2px; word-break:break-all; }
+  .cfg-item .env { color:var(--acc); font-size:11px; font-family:ui-monospace,Menlo,monospace; }
+
+  .empty-hint { color:var(--mut); font-size:13px; padding:8px 0; }
+
+  /* ---------- Toast ---------- */
+  #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
+    background:#111827; color:#fff; padding:10px 22px; border-radius:99px; font-size:13px;
+    z-index:200; transition:transform .25s ease; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+  #toast.show { transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="logo">L</span>
+    <h1>litflow 文献流监管台</h1>
+    <span class="sub">Zotero → Markdown 语义包 → 向量检索</span>
+  </div>
+  <div class="head-right">
+    <span class="chip"><span class="dot" id="srvDot"></span><span id="mcpUrl"></span></span>
+    <button class="btn ghost sm" onclick="copyMcpConfig()">复制 MCP 配置</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="monitor" class="active">📊 性能监控</button>
+  <button data-tab="flow">📚 Zotero 文献流</button>
+  <button data-tab="adhoc">📦 临时资料</button>
+  <button data-tab="search">🔍 语义检索</button>
+  <button data-tab="settings">⚙️ 设置</button>
+</nav>
+
+<main>
+
+<!-- ================= 性能监控 ================= -->
+<section class="tabpane active" id="pane-monitor">
+  <div class="stats" id="statTiles"></div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>资源曲线</h2>
+      <div class="hint">近 5 分钟内存可用 / CPU 占用（每 3 秒采样）</div>
+      <div class="chartwrap"><canvas id="resChart" width="520" height="150"></canvas></div>
+      <div class="legend">
+        <span><i style="background:#2563eb"></i>内存可用 (GB)</span>
+        <span><i style="background:#f59e0b"></i>CPU (%)</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>就绪概览</h2>
+      <div class="hint">Zotero 分类与临时资料包的准备状态</div>
+      <div id="overviewArea" style="max-height:220px; overflow:auto"><span class="empty-hint">加载中…</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>任务队列 <span class="tag queued" id="jobCount"></span></h2>
+    <div class="hint">串行调度：OCR 并发 1，内存低于守卫阈值时新任务自动推迟</div>
+    <div id="jobsArea"><span class="empty-hint">暂无任务</span></div>
+  </div>
+</section>
+
+<!-- ================= Zotero 文献流 ================= -->
+<section class="tabpane" id="pane-flow">
+  <div class="card">
+    <h2>准备 / 更新语义包</h2>
+    <div class="hint">默认增量：仅处理新增或变更（Zotero 版本号 / 附件指纹变化）的条目；全量重建会重新转换并重建索引</div>
+    <div class="row">
+      <select id="prepColl" style="min-width:260px"><option>加载分类中…</option></select>
+      <input type="number" id="prepLimit" placeholder="条数上限(可选)" style="width:150px" min="1">
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="prepOcr" checked> 启用 OCR（扫描件走 MLX）</label>
+      <label title="重新转换该分类所有条目并重建索引"><input type="checkbox" id="prepRebuild"> 全量重建</label>
+      <button class="btn" id="btnPrepare">启动准备</button>
+      <button class="btn ghost" id="btnGotoMonitor">查看进度 →</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>语义文献包</h2>
+    <div class="hint">选择已准备的分类查看条目；点击题名查看转换后的 content.md</div>
+    <div class="row"><select id="pkgColl" style="min-width:260px"><option value="">选择分类</option></select></div>
+    <div id="pkgArea"><span class="empty-hint">选择已准备的分类查看条目</span></div>
+  </div>
+</section>
+
+<!-- ================= 临时资料 ================= -->
+<section class="tabpane" id="pane-adhoc">
+  <div class="card">
+    <h2>新建临时资料包</h2>
+    <div class="hint">把任意本地文件/文件夹（如电子书库、散装 PDF）做成可检索语义包：自动分级转换 + 向量索引，重复提交自动增量</div>
+    <div class="pathlist" id="adhocPaths">
+      <div class="pathrow">
+        <input type="text" class="adhoc-path" placeholder="点击右侧「浏览…」选择，或直接输入路径">
+        <button class="btn ghost sm" title="浏览选择路径">浏览…</button>
+        <button class="btn ghost sm" title="移除">×</button>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn ghost sm" onclick="addPathRow()">+ 添加路径</button>
+    </div>
+    <div class="row">
+      <input type="text" id="adhocName" placeholder="资料包名称（可选，默认取首个路径目录名）" style="flex:1;min-width:200px">
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="adhocOcr" checked> 启用 OCR</label>
+      <label><input type="checkbox" id="adhocRecursive" checked> 递归子目录</label>
+      <button class="btn" id="btnAdhoc">处理这些资料</button>
+      <button class="btn ghost" id="btnGotoMonitor2">查看进度 →</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>已有资料包</h2>
+    <div class="hint">选择资料包查看清单；点击文件名查看转换结果</div>
+    <div class="row"><select id="adhocPkg" style="min-width:260px"><option value="">选择资料包</option></select></div>
+    <div id="adhocArea"><span class="empty-hint">尚无资料包</span></div>
+  </div>
+</section>
+
+<!-- ================= 语义检索 ================= -->
+<section class="tabpane" id="pane-search">
+  <div class="card">
+    <h2>自然语言检索</h2>
+    <div class="hint">检索所有已就绪的语义包（Zotero 分类 + 临时资料包）；需 LM Studio embedding 服务在线</div>
+    <div class="row">
+      <input type="text" class="wide" id="q" placeholder="如：古琴音色的声学分析 / 琴徽定音之法">
+      <select id="qColl" style="min-width:180px"><option value="">全部分类</option></select>
+      <button class="btn" id="btnSearch">检索</button>
+    </div>
+    <div id="searchArea"><span class="empty-hint">输入查询后回车或点击检索</span></div>
+  </div>
+</section>
+
+<!-- ================= 设置 ================= -->
+<section class="tabpane" id="pane-settings">
+  <div class="card">
+    <h2>服务配置</h2>
+    <div class="hint">当前运行配置（只读）。修改方式：设置对应环境变量后重启服务</div>
+    <div class="cfg-grid" id="cfgGrid"><span class="empty-hint">加载中…</span></div>
+  </div>
+
+  <div class="card">
+    <h2>MCP 客户端接入</h2>
+    <div class="hint">任意支持 streamable-http 的 AI 客户端（Claude Desktop / Cherry Studio / Trae 等）；远程电脑把 localhost 换成服务器 IP 或 Tailscale 主机名</div>
+    <div class="cfg-item" style="margin-bottom:12px">
+      <div class="k">MCP 端点</div>
+      <div class="v" id="mcpEndpoint"></div>
+    </div>
+    <div class="row">
+      <button class="btn" onclick="copyMcpConfig()">复制客户端配置 JSON</button>
+      <button class="btn ghost" onclick="downloadMcpConfig()">下载 mcp.json</button>
+    </div>
+    <pre class="viewer-pre" id="mcpCfgPre" style="margin-top:10px"></pre>
+  </div>
+</section>
+
+</main>
+
+<!-- ================= 路径选择器弹窗 ================= -->
+<div class="overlay" id="pickerOverlay">
+  <div class="modal">
+    <header><h3>选择路径</h3></header>
+    <div class="body">
+      <div class="picker-quick" id="pickerQuick"></div>
+      <div class="picker-crumbs" id="pickerCrumbs"></div>
+      <div class="picker-list" id="pickerList"></div>
+      <input type="text" class="picker-path-input" id="pickerInput" placeholder="当前路径（可直接编辑）">
+    </div>
+    <footer>
+      <button class="btn ghost" onclick="closePicker()">取消</button>
+      <button class="btn" id="pickerConfirm">使用此路径</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ================= 内容查看器弹窗 ================= -->
+<div class="overlay" id="viewerOverlay" onclick="if(event.target===this)closeViewer()">
+  <div class="modal" style="width:760px">
+    <header><h3 id="viewerTitle">内容</h3></header>
+    <div class="body"><pre class="viewer-pre" id="viewerPre"></pre></div>
+    <footer><button class="btn ghost" onclick="closeViewer()">关闭</button></footer>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => (s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = t => t ? new Date(t * 1000).toLocaleTimeString('zh-CN') : '-';
+const fmtDT = t => t ? new Date(t * 1000).toLocaleString('zh-CN') : '-';
+
+$('#mcpUrl').textContent = location.origin + '/mcp';
+
+// ---------------- Toast ----------------
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ---------------- Tab 切换 ----------------
+$('#tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-tab]');
+  if (!btn) return;
+  $$('#tabs button').forEach(b => b.classList.toggle('active', b === btn));
+  $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + btn.dataset.tab));
+});
+$('#btnGotoMonitor').onclick = () => switchTab('monitor');
+$('#btnGotoMonitor2').onclick = () => switchTab('monitor');
+function switchTab(name) {
+  const btn = $$('#tabs button').find(b => b.dataset.tab === name);
+  if (btn) btn.click();
+}
+
+// ---------------- 系统状态 / 监控 ----------------
+const MAX_POINTS = 100;
+const memHist = [], cpuHist = [];
+
+async function loadSys() {
+  let r;
+  try { r = await (await fetch('/api/system')).json(); $('#srvDot').classList.remove('off'); }
+  catch (e) { $('#srvDot').classList.add('off'); return; }
+  memHist.push(r.mem_available_mb / 1024); if (memHist.length > MAX_POINTS) memHist.shift();
+  cpuHist.push(r.cpu_percent); if (cpuHist.length > MAX_POINTS) cpuHist.shift();
+
+  const low = r.mem_available_mb < r.mem_guard_mb;
+  const disk = r.disk;
+  $('#statTiles').innerHTML = `
+    <div class="tile ${low ? 'low' : ''}">
+      <div class="k">内存可用 <span>${low ? '低于守卫阈值' : '正常'}</span></div>
+      <div class="v">${(r.mem_available_mb/1024).toFixed(1)}<small> / ${(r.mem_total_mb/1024).toFixed(0)} GB</small></div>
+      <div class="sub">守卫阈值 ${(r.mem_guard_mb/1024).toFixed(0)} GB</div>
+    </div>
+    <div class="tile">
+      <div class="k">CPU 占用</div><div class="v">${r.cpu_percent}<small> %</small></div>
+      <div class="sub">负载 ${r.loadavg.map(x=>x.toFixed(1)).join(' / ')}</div>
+    </div>
+    ${disk ? `
+    <div class="tile">
+      <div class="k">存储空间（语义包盘）</div>
+      <div class="v">${disk.free_gb}<small> / ${disk.total_gb} GB 空闲</small></div>
+      <div class="sub mono" title="${esc(disk.path)}">${esc(disk.path.length > 34 ? '…' + disk.path.slice(-33) : disk.path)}</div>
+    </div>` : ''}
+    <div class="tile">
+      <div class="k">活跃任务</div><div class="v">${r.active_jobs}<small> 个</small></div>
+      <div class="sub">串行队列 · OCR 并发 1</div>
+    </div>`;
+  drawChart();
+}
+
+function drawChart() {
+  const cv = $('#resChart'), ctx = cv.getContext('2d');
+  const W = cv.width = cv.clientWidth * (window.devicePixelRatio || 1);
+  const H = cv.height = 150 * (window.devicePixelRatio || 1);
+  cv.style.height = '150px';
+  ctx.clearRect(0, 0, W, H);
+  const n = Math.max(memHist.length, cpuHist.length, 2);
+  const maxMem = Math.max(16, ...memHist) * 1.1;
+  const maxCpu = 100;
+  const x = i => W - (n - 1 - i) * (W / (n - 1));
+  // 网格
+  ctx.strokeStyle = '#eef2f7'; ctx.lineWidth = 1;
+  for (let g = 1; g < 4; g++) { ctx.beginPath(); ctx.moveTo(0, H*g/4); ctx.lineTo(W, H*g/4); ctx.stroke(); }
+  // 内存
+  ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2; ctx.beginPath();
+  memHist.forEach((v, i) => { const y = H - (v / maxMem) * (H - 8) - 4; i ? ctx.lineTo(x(i), y) : ctx.moveTo(x(i), y); });
+  ctx.stroke();
+  // CPU
+  ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1.6; ctx.beginPath();
+  cpuHist.forEach((v, i) => { const y = H - (v / maxCpu) * (H - 8) - 4; i ? ctx.lineTo(x(i), y) : ctx.moveTo(x(i), y); });
+  ctx.stroke();
+}
+
+// ---------------- 就绪概览 ----------------
+let collections = [];
+async function loadColls() {
+  try {
+    collections = await (await fetch('/api/collections')).json();
+    if (!Array.isArray(collections)) throw new Error(collections.error || '失败');
+    const zotero = collections.filter(c => !c.adhoc);
+    const adhoc = collections.filter(c => c.adhoc);
+    const opts = zotero.map(c =>
+      `<option value="${esc(c.name)}">${esc(c.name)}（${c.prepared ? c.ok_items + '/' + c.items + ' 就绪' : '未准备'}）</option>`).join('');
+    $('#prepColl').innerHTML = opts;
+    $('#pkgColl').innerHTML = '<option value="">选择分类</option>' +
+      zotero.filter(c => c.prepared).map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+    $('#qColl').innerHTML = '<option value="">全部分类</option>' +
+      collections.filter(c => c.prepared).map(c =>
+        `<option value="${esc(c.name)}">${esc(c.name)}${c.adhoc ? '（临时包）' : ''}</option>`).join('');
+
+    // 监控页概览
+    const row = c => `<tr>
+      <td>${c.adhoc ? '<span class="tag ocr">临时</span>' : '<span class="tag text">Zotero</span>'}</td>
+      <td>${esc(c.name)}</td>
+      <td>${c.prepared ? `<span class="tag ok">${c.ok_items}/${c.items} 就绪</span>` : '<span class="tag empty">未准备</span>'}</td>
+      <td class="mono">${esc(c.updated_at || '-')}</td></tr>`;
+    $('#overviewArea').innerHTML = collections.length
+      ? `<table><thead><tr><th>来源</th><th>名称</th><th>状态</th><th>更新</th></tr></thead><tbody>` +
+        collections.map(row).join('') + '</tbody></table>'
+      : '<span class="empty-hint">暂无分类</span>';
+  } catch (e) {
+    $('#prepColl').innerHTML = `<option>Zotero 连接失败</option>`;
+    $('#overviewArea').innerHTML = `<span class="empty-hint" style="color:var(--err)">Zotero 连接失败（本地 API 是否启用？）</span>`;
+  }
+}
+
+// ---------------- 任务 ----------------
+async function loadJobs() {
+  let jobs;
+  try { jobs = await (await fetch('/api/jobs')).json(); } catch (e) { return; }
+  const active = jobs.filter(j => ['queued','running','deferred'].includes(j.status)).length;
+  const jc = $('#jobCount');
+  jc.textContent = active ? `${active} 进行中` : '空闲';
+  jc.className = 'tag ' + (active ? 'queued' : 'ok');
+  if (!jobs.length) { $('#jobsArea').innerHTML = '<span class="empty-hint">暂无任务</span>'; return; }
+  $('#jobsArea').innerHTML = `<table><thead><tr><th>状态</th><th>作业</th><th>最新进度</th><th>结果</th><th>开始</th><th></th></tr></thead><tbody>` +
+    jobs.slice(0, 12).map(j => {
+      const p = j.params || {};
+      const title = j.kind === 'adhoc'
+        ? `📦 ${esc(p.name || '')}（${(p.paths||[]).length} 路径${p.recursive === false ? '·不递归' : ''}）`
+        : `📚 ${esc(p.collection || '')}${p.limit ? ' ≤' + p.limit : ''}${p.rebuild ? '·重建' : ''}`;
+      let result = '-';
+      if (j.status === 'done' && j.result)
+        result = `${j.result.records ?? j.result.files ?? '-'} 条 · 索引 ${j.result.chunks_indexed} 块 · ${j.result.elapsed_sec}s`;
+      if (j.status === 'error') result = `<span style="color:var(--err)">${esc((j.error||'').slice(0,90))}</span>`;
+      const last = (j.log && j.log.length) ? j.log[j.log.length-1].msg : '';
+      const detail = (j.log || []).slice(-8).map(l => esc(l.msg)).join('\n');
+      return `<tr>
+        <td><span class="tag ${j.status}">${j.status}</span></td>
+        <td><div class="mono">${title}</div><div class="mono" style="color:var(--mut);font-size:11px">${j.id}</div></td>
+        <td style="max-width:320px"><div class="logline" title="${esc(detail)}">${esc(last.slice(0,70))}</div></td>
+        <td>${result}</td>
+        <td class="mono">${fmt(j.started_at)}</td>
+        <td>${['queued','running','deferred'].includes(j.status)
+          ? `<button class="btn danger sm" onclick="cancelJob('${j.id}')">取消</button>` : ''}</td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+}
+window.cancelJob = async id => { await fetch('/api/jobs/' + id + '/cancel', {method:'POST'}); loadJobs(); };
+
+// ---------------- 文献流提交 ----------------
+$('#btnPrepare').onclick = async () => {
+  const body = {
+    collection: $('#prepColl').value,
+    limit: $('#prepLimit').value ? parseInt($('#prepLimit').value) : null,
+    use_ocr: $('#prepOcr').checked,
+    rebuild: $('#prepRebuild').checked,
+  };
+  if (!body.collection) return toast('请选择分类');
+  if (body.rebuild && !confirm('全量重建会重新转换该分类所有条目并重建索引，确定？')) return;
+  const r = await fetch('/api/jobs', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  if (!r.ok) return toast('提交失败：' + (await r.json()).error);
+  toast('已提交准备任务（增量）');
+  switchTab('monitor'); loadJobs();
+};
+
+// ---------------- 文献包浏览 ----------------
+let pkgItems = [];   // 当前展示的 manifest 条目（供点击回调索引）
+let pkgCollName = '';
+$('#pkgColl').onchange = loadPkg;
+async function loadPkg() {
+  const coll = $('#pkgColl').value;
+  if (!coll) { $('#pkgArea').innerHTML = '<span class="empty-hint">选择已准备的分类查看条目</span>'; return; }
+  const mf = await (await fetch('/api/manifest/' + encodeURIComponent(coll))).json();
+  if (mf.error) { $('#pkgArea').innerHTML = `<span class="empty-hint">${esc(mf.error)}</span>`; return; }
+  pkgItems = mf.items; pkgCollName = coll;
+  $('#pkgArea').innerHTML = `<div class="empty-hint" style="margin-bottom:8px">更新于 ${esc(mf.updated_at || '-')}，共 ${mf.items.length} 条</div>
+    <table><thead><tr><th>状态</th><th>题名</th><th>作者</th><th>年份</th><th>路由</th><th>页数</th><th>字符</th></tr></thead><tbody>` +
+    mf.items.map((i, idx) => `<tr>
+      <td><span class="tag ${i.status}">${i.status}</span></td>
+      <td><a href="javascript:void 0" style="color:var(--acc)" onclick="viewZoteroItem(${idx})">${esc(i.title)}</a></td>
+      <td>${esc(i.creator || '')}</td><td>${esc(i.year || '')}</td>
+      <td><span class="tag ${i.route}">${i.route}</span></td>
+      <td>${i.pages || '-'}</td><td>${i.chars ? (i.chars/10000).toFixed(1) + '万' : 0}</td>
+    </tr>`).join('') + '</tbody></table>';
+}
+window.viewZoteroItem = async idx => {
+  const it = pkgItems[idx];
+  if (!it) return;
+  const dir = it.dir.split('/').pop();
+  const r = await fetch(`/api/item/${encodeURIComponent(pkgCollName)}/${encodeURIComponent(dir)}/content`);
+  openViewer(it.title, r.ok ? (await r.text() || '（空内容）') : await r.text());
+};
+
+// ---------------- adhoc：路径行管理 ----------------
+function bindPathRow(div) {
+  const [browse, remove] = div.querySelectorAll('button');
+  const input = div.querySelector('input');
+  browse.onclick = () => openPicker(p => input.value = p);
+  remove.onclick = () => div.remove();
+}
+function addPathRow() {
+  const div = document.createElement('div');
+  div.className = 'pathrow';
+  div.innerHTML = `<input type="text" class="adhoc-path" placeholder="点击右侧「浏览…」选择，或直接输入路径">
+    <button class="btn ghost sm" title="浏览选择路径">浏览…</button>
+    <button class="btn ghost sm" title="移除">×</button>`;
+  bindPathRow(div);
+  $('#adhocPaths').appendChild(div);
+}
+window.addPathRow = addPathRow;
+$$('#adhocPaths .pathrow').forEach(bindPathRow);
+
+$('#btnAdhoc').onclick = async () => {
+  const paths = $$('.adhoc-path').map(i => i.value.trim()).filter(Boolean);
+  if (!paths.length) return toast('请至少填写一个路径');
+  const body = {
+    paths,
+    name: $('#adhocName').value.trim() || undefined,
+    use_ocr: $('#adhocOcr').checked,
+    recursive: $('#adhocRecursive').checked,
+    index: true,
+  };
+  const r = await fetch('/api/adhoc/submit', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  if (!r.ok) return toast('提交失败：' + (await r.json()).error);
+  toast('已提交临时资料处理任务');
+  switchTab('monitor'); loadJobs(); loadAdhocPacks();
+};
+
+// ---------------- adhoc 资料包浏览 ----------------
+let adhocItems = [];
+let adhocSname = '';
+async function loadAdhocPacks() {
+  try {
+    const packs = await (await fetch('/api/adhoc/packs')).json();
+    if (!Array.isArray(packs)) throw new Error(packs.error || '失败');
+    $('#adhocPkg').innerHTML = '<option value="">选择资料包</option>' +
+      packs.map(p => `<option value="${esc(p.id)}">${esc(p.name)}（${p.ok_items}/${p.items} 就绪）</option>`).join('');
+  } catch (e) { $('#adhocPkg').innerHTML = '<option>加载失败</option>'; }
+}
+$('#adhocPkg').onchange = loadAdhocItems;
+async function loadAdhocItems() {
+  const sname = $('#adhocPkg').value;
+  if (!sname) { $('#adhocArea').innerHTML = '<span class="empty-hint">尚无资料包</span>'; return; }
+  const mf = await (await fetch('/api/adhoc/manifest/' + encodeURIComponent(sname))).json();
+  if (mf.error) { $('#adhocArea').innerHTML = `<span class="empty-hint">${esc(mf.error)}</span>`; return; }
+  adhocItems = mf.items; adhocSname = sname;
+  $('#adhocArea').innerHTML = `<div class="empty-hint" style="margin-bottom:8px">集合 ${esc(mf.collection)} ｜ 更新于 ${esc(mf.updated_at || '-')}，${mf.items.length} 个文件</div>
+    <table><thead><tr><th>状态</th><th>文件名</th><th>路由</th><th>字符</th></tr></thead><tbody>` +
+    mf.items.map((i, idx) => `<tr>
+      <td><span class="tag ${i.status}">${i.status}</span></td>
+      <td><a href="javascript:void 0" style="color:var(--acc)" onclick="viewAdhocItem(${idx})">${esc(i.title)}</a></td>
+      <td><span class="tag ${i.route}">${i.route}</span></td>
+      <td>${i.chars ? (i.chars/10000).toFixed(1) + '万' : 0}</td>
+    </tr>`).join('') + '</tbody></table>';
+}
+window.viewAdhocItem = async idx => {
+  const it = adhocItems[idx];
+  if (!it) return;
+  const r = await fetch(`/api/adhoc/content/${encodeURIComponent(adhocSname)}/${encodeURIComponent(it.item_key)}`);
+  openViewer(it.title, r.ok ? (await r.text() || '（空内容）') : await r.text());
+};
+
+// ---------------- 检索 ----------------
+$('#btnSearch').onclick = doSearch;
+$('#q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+async function doSearch() {
+  const q = $('#q').value.trim();
+  if (!q) return;
+  $('#searchArea').innerHTML = '<span class="empty-hint">检索中…</span>';
+  const coll = $('#qColl').value;
+  const r = await (await fetch(`/api/search?q=${encodeURIComponent(q)}${coll ? '&collection=' + encodeURIComponent(coll) : ''}`)).json();
+  if (r.error) { $('#searchArea').innerHTML = `<span style="color:var(--err)">${esc(r.error)}</span>`; return; }
+  if (!r.hits.length) { $('#searchArea').innerHTML = '<span class="empty-hint">无结果（对应分类是否已准备？LM Studio 是否在线？）</span>'; return; }
+  const rx = new RegExp(q.split(/\s+/).filter(Boolean).slice(0,3).map(esc).join('|'), 'gi');
+  $('#searchArea').innerHTML = r.hits.map(h => `
+    <div class="hit">
+      <div class="meta">[${esc(h.collection)}] ${esc(h.creator)} ${esc(h.year || '')} 《${esc(h.title)}》 ${h.page ? '· p.' + esc(h.page) : ''}</div>
+      <div class="frag">${esc((h.text||'').slice(0,300)).replace(rx, m => '<mark>' + m + '</mark>')}</div>
+    </div>`).join('');
+}
+
+// ---------------- 设置 ----------------
+let mcpCfgText = '';
+async function loadConfig() {
+  try {
+    const c = await (await fetch('/api/config')).json();
+    const items = [
+      ['语义包根目录', c.root, 'LITFLOW_ROOT'],
+      ['Zotero 本地 API', c.zotero_api, 'LITFLOW_ZOTERO_API'],
+      ['LM Studio embedding', c.lmstudio, 'LITFLOW_LMSTUDIO'],
+      ['向量模型', c.embed_model, 'LITFLOW_EMBED_MODEL'],
+      ['LanceDB 目录', c.lancedb, 'LITFLOW_LANCEDB'],
+      ['服务监听', `${c.host}:${c.port}`, 'LITFLOW_HOST / LITFLOW_PORT'],
+    ];
+    $('#cfgGrid').innerHTML = items.map(([k, v, env]) => `
+      <div class="cfg-item"><div class="k">${esc(k)}</div>
+      <div class="v">${esc(v || '-')}</div>
+      <div class="env">env: ${esc(env)}</div></div>`).join('');
+  } catch (e) { $('#cfgGrid').innerHTML = '<span class="empty-hint">配置加载失败</span>'; }
+  $('#mcpEndpoint').textContent = location.origin + '/mcp';
+  try {
+    const cfg = await (await fetch('/api/mcp-config')).json();
+    mcpCfgText = JSON.stringify(cfg, null, 2);
+    $('#mcpCfgPre').textContent = mcpCfgText;
+  } catch (e) { /* 忽略 */ }
+}
+window.copyMcpConfig = async () => {
+  try {
+    const cfg = await (await fetch('/api/mcp-config')).json();
+    await navigator.clipboard.writeText(JSON.stringify(cfg, null, 2));
+    toast('MCP 客户端配置已复制到剪贴板');
+  } catch (e) { toast('复制失败：' + e); }
+};
+window.downloadMcpConfig = () => {
+  if (!mcpCfgText) return toast('配置尚未加载');
+  const blob = new Blob([mcpCfgText], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mcp.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+// ---------------- 路径选择器 ----------------
+let pickerCtx = null; // { onPick(path) }
+let pickerCurrent = '/';
+let pickerSelFile = null;
+let pickerRoot = '/';
+
+async function openPicker(onPick, startPath) {
+  pickerCtx = { onPick };
+  pickerSelFile = null;
+  $('#pickerOverlay').classList.add('show');
+  try { const c = await (await fetch('/api/config')).json(); pickerRoot = c.root; } catch (e) {}
+  renderQuick();
+  await navDir(startPath || '/Volumes');
+}
+window.openPicker = openPicker;
+function closePicker() { $('#pickerOverlay').classList.remove('show'); pickerCtx = null; }
+window.closePicker = closePicker;
+
+function renderQuick() {
+  const quicks = [
+    ['/', '根目录 /'], ['~', '用户主目录'], ['/Volumes', '外置卷'],
+    [pickerRoot, '语义包根目录'],
+  ];
+  $('#pickerQuick').innerHTML = quicks.map(([p, label]) =>
+    `<button class="crumb" onclick="navQuick('${esc(p)}')">${esc(label)}</button>`).join('');
+}
+window.navQuick = p => navDir(p);
+
+async function navDir(path) {
+  const r = await (await fetch('/api/fs/list?path=' + encodeURIComponent(path))).json();
+  if (r.error) { toast(r.error); return; }
+  pickerCurrent = r.path;
+  pickerSelFile = null;
+  $('#pickerInput').value = pickerCurrent;
+  // 面包屑
+  const parts = pickerCurrent.split('/').filter(Boolean);
+  let acc = '';
+  let crumbs = `<button class="crumb" onclick="navDir('/')">/</button>`;
+  for (const p of parts) {
+    acc += '/' + p;
+    crumbs += `<button class="crumb" onclick="navDir('${esc(acc)}')">${esc(p)}</button>`;
+  }
+  $('#pickerCrumbs').innerHTML = crumbs;
+  // 列表
+  let html = (r.parent ? `<div class="picker-item" onclick="navDir('${esc(r.parent)}')"><span><span class="ic">📁..</span> 返回上级</span></div>` : '');
+  html += (r.dirs || []).map(d =>
+    `<div class="picker-item" onclick="navDir('${esc(pickerCurrent + (pickerCurrent.endsWith('/') ? '' : '/') + d)}')"><span><span class="ic">📁</span> ${esc(d)}</span><span class="logline" style="max-width:60px">进入</span></div>`).join('');
+  html += (r.files || []).map(f =>
+    `<div class="picker-item" id="pf-${esc(f).replace(/[^a-zA-Z0-9]/g,'_')}" onclick="pickFile('${esc(f)}', this)"><span><span class="ic">📄</span> ${esc(f)}</span><span>选择</span></div>`).join('');
+  $('#pickerList').innerHTML = html || '<div class="empty-hint" style="padding:10px 14px">空目录</div>';
+}
+window.navDir = navDir;
+window.pickFile = (f, el) => {
+  $$('#pickerList .picker-item').forEach(x => x.classList.remove('sel'));
+  el.classList.add('sel');
+  pickerSelFile = pickerCurrent + (pickerCurrent.endsWith('/') ? '' : '/') + f;
+  $('#pickerInput').value = pickerSelFile;
+};
+$('#pickerConfirm').onclick = () => {
+  const val = $('#pickerInput').value.trim();
+  if (!val) return toast('请先选择或输入路径');
+  if (pickerCtx && pickerCtx.onPick) pickerCtx.onPick(val);
+  closePicker();
+};
+$('#pickerInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') navDir($('#pickerInput').value.trim());
+});
+
+// ---------------- 内容查看器 ----------------
+function openViewer(title, text) {
+  $('#viewerTitle').textContent = title || '内容';
+  $('#viewerPre').textContent = (text || '').slice(0, 60000);
+  $('#viewerOverlay').classList.add('show');
+}
+window.closeViewer = () => $('#viewerOverlay').classList.remove('show');
+
+// ---------------- 轮询 ----------------
+loadSys(); loadColls(); loadJobs(); loadAdhocPacks(); loadConfig();
+setInterval(loadSys, 3000);
+setInterval(loadJobs, 3000);
+setInterval(loadColls, 30000);
+window.addEventListener('resize', drawChart);
+</script>
+</body>
+</html>

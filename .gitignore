@@ -2,10 +2,12 @@
 __pycache__/
 *.py[oc]
 build/
-dist/
 wheels/
 *.egg-info/
 litflow.egg-info/
+# dist/ 整体忽略，但保留 dist/*.xpi 插件产物
+dist/*
+!dist/*.xpi
 
 # Virtual environments
 .venv

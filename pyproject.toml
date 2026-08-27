@@ -1,0 +1,40 @@
+[project]
+name = "litflow"
+version = "0.1.0"
+description = "Zotero → Markdown 语义文献包 → 向量检索：本地文献流处理与 MCP 服务（含任意文件夹 OCR/索引的 adhoc 临时任务）"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "litflow contributors" }]
+requires-python = ">=3.12"
+dependencies = [
+    "einops>=0.8.2",
+    "fastmcp>=3.4.7",
+    "firecrawl-anydoc>=0.2.3",
+    "httpx>=0.28.1",
+    "lancedb>=0.37.1",
+    "mlx>=0.32.2",
+    "mlx-lm>=0.31.3",
+    "pillow>=12.3.0",
+    "psutil>=7.2.2",
+    "pymupdf>=1.28.2",
+    "pyyaml>=6.0.3",
+    "safetensors>=0.8.0",
+    "torch>=2.13.0",
+    "trafilatura>=2.2.0",
+    "transformers>=5.16.0",
+]
+
+[project.scripts]
+litflow = "litflow.server:main"
+
+[tool.uv]
+package = true
+
+[tool.setuptools]
+packages = ["litflow", "ocr_port"]
+
+[tool.setuptools.package-data]
+litflow = ["webui.html"]
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
