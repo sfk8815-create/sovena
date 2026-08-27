@@ -3,8 +3,8 @@
 OCR 通道支持两种后端，输出统一为 Unlimited-OCR 的结构化行格式
 （`kind [x1,y1,x2,y2]text`），下游 converter 无感知：
 
-  1. mlx  —— 本仓库 ocr_port/（Apple Silicon 专用，权重经 LM Studio 下载）
-  2. http —— OpenAI 兼容接口（llama-server / LM Studio / vLLM 等
+  1. mlx  —— 本仓库 ocr_port/（Apple Silicon 专用，MLX 权重从 HuggingFace 下载）
+  2. http —— OpenAI 兼容接口（llama-server / vLLM 等
              服务 Unlimited-OCR 的 GGUF 量化版），任意平台可用（含
              Windows / Linux / 纯 CPU）
 
@@ -108,10 +108,7 @@ def backend_info() -> dict:
         "api": DEFAULT_OCR_API or None,
         "model_name": DEFAULT_OCR_MODEL_NAME if backend == "http" else None,
         "mlx_model_dir": os.path.expanduser(
-            os.environ.get(
-                "LITFLOW_OCR_MODEL",
-                "~/.lmstudio/models/LoJexLLM/Unlimited-OCR-MLX",
-            )
+            os.environ.get("LITFLOW_OCR_MODEL", "~/models/Unlimited-OCR-MLX")
         )
         if backend == "mlx"
         else None,

@@ -44,7 +44,7 @@ Zotero(本地API) ─┐
 - **L1 文本路**：有文本层的 PDF → pymupdf 提取，页码标注优先用 PDF Page Labels（书页页码，非物理页序）
 - **L2 OCR 路**：扫描/影印件 → Unlimited-OCR 结构化识别（MLX / GGUF 双后端），页码优先级：OCR 识别的 page_number > PDF Page Label > 物理页序
 - **非 PDF**：docx / epub / html / txt / md / xlsx / pptx 等 → anydoc / trafilatura
-- **检索**：任意 OpenAI 兼容 embedding 服务（本地 LM Studio / Ollama，或百炼 / OpenRouter 等远程平台）+ LanceDB 本地向量库
+- **检索**：任意 OpenAI 兼容 embedding 服务（本地 mlx-lm / Ollama，或百炼 / OpenRouter 等远程平台）+ LanceDB 本地向量库
 
 ## OCR 引擎与模型部署
 
@@ -55,13 +55,18 @@ litflow 的 OCR 通道使用 **Unlimited-OCR**（[百度开源](https://github.c
 | 后端 | 运行方式 | 适用平台 |
 | --- | --- | --- |
 | `mlx`（默认） | 本仓库 `ocr_port/`（[mlx-vlm 社区 MLX 实现](https://github.com/Blaizzy/mlx-vlm)） | Apple Silicon Mac |
-| `http` | OpenAI 兼容接口：llama-server / LM Studio / vLLM 服务 **GGUF 量化版** | **任意平台**（Windows / Linux / Intel Mac，纯 CPU 亦可） |
+| `http` | OpenAI 兼容接口：llama-server / vLLM 服务 **GGUF 量化版** | **任意平台**（Windows / Linux / Intel Mac，纯 CPU 亦可） |
 
-### 后端一：MLX（Apple Silicon，默认零配置）
+### 后端一：MLX（Apple Silicon，默认）
 
-打开 LM Studio → 搜索 `Unlimited-OCR-MLX`（作者 LoJexLLM 上传的 MLX 权重格式）→ 下载。模型会落在 `~/.lmstudio/models/LoJexLLM/Unlimited-OCR-MLX/`，正是 litflow 的默认路径，**无需任何配置**。
+从 HuggingFace 下载 MLX 权重（[LoJexLLM/Unlimited-OCR-MLX](https://huggingface.co/LoJexLLM/Unlimited-OCR-MLX)）：
 
-也可从 HuggingFace 手动下载 MLX 权重目录，放到任意位置后在 `.env` 指定：
+```bash
+huggingface-cli download LoJexLLM/Unlimited-OCR-MLX \
+  --local-dir ~/models/Unlimited-OCR-MLX
+```
+
+默认就落在 litflow 的默认路径（`~/models/Unlimited-OCR-MLX`），**无需任何配置**。放到其他位置则在 `.env` 指定：
 
 ```dotenv
 LITFLOW_OCR_MODEL=/path/to/Unlimited-OCR-MLX
@@ -86,13 +91,22 @@ llama-server -m ocr-models/Unlimited-OCR-Q4_K_M.gguf \
 echo 'LITFLOW_OCR_API=http://127.0.0.1:8080/v1' >> .env
 ```
 
-也可用 LM Studio / vLLM 等任何能跑该 GGUF 的 OpenAI 兼容服务（模型名不同时加 `LITFLOW_OCR_MODEL_NAME=...`；有鉴权加 `LITFLOW_OCR_API_KEY=...`）。OCR 服务甚至可以部署在另一台有 GPU 的机器上，litflow 填它的地址即可。
+也可用 vLLM 等任何能跑该 GGUF 的 OpenAI 兼容服务（模型名不同时加 `LITFLOW_OCR_MODEL_NAME=...`；有鉴权加 `LITFLOW_OCR_API_KEY=...`）。OCR 服务甚至可以部署在另一台有 GPU 的机器上，litflow 填它的地址即可。
 
 > 提示：Q4 量化约 3GB，16GB 内存的普通电脑即可运行。litflow 按需调用（逐页请求），不在 litflow 进程内占内存。
 
 **Embedding 服务（检索用，必须）**——任意 OpenAI 兼容 `/embeddings` 接口均可，二选一：
 
-- **本地**（推荐，免费私密）：LM Studio → 搜索 `qwen3-embedding-4b` → 下载加载 → 保持本地服务开启（默认 `http://localhost:1234/v1`）。Ollama / vLLM 等同理
+- **本地**（推荐，免费私密）：用 [mlx-lm](https://github.com/ml-explore/mlx-lm)（Apple 官方 MLX 生态的推理服务，MIT）：
+
+```bash
+uv tool install mlx-lm            # 或 pip install mlx-lm
+huggingface-cli download Qwen/Qwen3-Embedding-4B --local-dir ~/models/Qwen3-Embedding-4B
+mlx_lm.server --model ~/models/Qwen3-Embedding-4B --port 8080
+# 起一个 OpenAI 兼容 /v1/embeddings 服务，即 litflow 的默认地址 http://localhost:8080/v1
+```
+
+Ollama / vLLM 等其他 OpenAI 兼容本地方案同理（地址不同时设 `LITFLOW_EMBED_API`）
 - **远程商用平台**（不想本地跑模型）：阿里云百炼 / OpenRouter / SiliconFlow 等，只需在 `.env` 填 API 地址与密钥：
 
 ```dotenv
@@ -127,13 +141,13 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ### 第 3 步：准备模型服务（检索必需 + OCR 可选）
 
 **embedding 服务（检索必需）**，二选一：
-- **本地（推荐）**：到 [lmstudio.ai](https://lmstudio.ai/) 装 LM Studio → 搜索 `qwen3-embedding-4b` → 下载 → 加载到内存 → 顶部「Developer」标签确认本地服务已启动。Ollama / vLLM 等其他本地方案同理
+- **本地（推荐）**：[mlx-lm](https://github.com/ml-explore/mlx-lm)（Apple 官方 MLX 生态，MIT）——`uv tool install mlx-lm`，下载模型并 `mlx_lm.server --model <模型目录> --port 8080` 起服务（完整命令见上节「Embedding 服务」）。Ollama / vLLM 等其他 OpenAI 兼容方案同理
 - **远程平台（不在本地跑模型）**：阿里云百炼 / OpenRouter 等，在项目根目录建 `.env` 填地址与密钥（见上节「Embedding 服务」的示例）
 
-**OCR 模型（仅扫描件需要，Apple Silicon）**：LM Studio 里搜索 `Unlimited-OCR-MLX` → 下载即可（litflow 需要时会自己加载/释放，不用在 LM Studio 里常驻）
+**OCR 模型（仅扫描件需要，Apple Silicon）**：从 HuggingFace 下载 [Unlimited-OCR-MLX](https://huggingface.co/LoJexLLM/Unlimited-OCR-MLX) 到 `~/models/Unlimited-OCR-MLX`（命令见上节「后端一」，litflow 需要时会自己加载/释放）
 
-> **非 Apple Silicon 电脑**做 OCR：LM Studio 只是路径之一，改用「GGUF 后端」更通用——下载 [Unlimited-OCR-GGUF](https://huggingface.co/sahilchachra/Unlimited-OCR-GGUF) + 跑 llama-server，配置见上节「后端二」。
-> 只想快速体验、暂时不检索？LM Studio 可以后补，先跳过做第 4-5 步。
+> **非 Apple Silicon 电脑**做 OCR：改用「GGUF 后端」——下载 [Unlimited-OCR-GGUF](https://huggingface.co/sahilchachra/Unlimited-OCR-GGUF) + 跑 llama-server，配置见上节「后端二」。
+> 只想快速体验、暂时不检索？模型服务可以后补，先跳过做第 4-5 步。
 
 ### 第 4 步：获取 litflow 并安装依赖
 
@@ -179,7 +193,7 @@ Web 台「Zotero 文献流」→ 选一个**小分类**（如 5 条文献）→�
 | 提示 `uv: command not found` | 第 1 步的 uv 没装好或没重开终端 |
 | 提示端口被占用 | 旧服务没关：`lsof -ti tcp:8765 \| xargs kill` 后重启 |
 | 「Zotero 连接失败」 | Zotero 没打开，或装的是旧版（需 7.0+） |
-| 检索报错/无结果 | embedding 服务没开/密钥不对（本地 LM Studio 或远程平台），或该分类还没「准备」过；换过 embedding 模型需重建索引 |
+| 检索报错/无结果 | embedding 服务没开/密钥不对（本地 mlx-lm 或远程平台），或该分类还没「准备」过；换过 embedding 模型需重建索引 |
 | OCR 报模型错误 | MLX 后端：没下载 `Unlimited-OCR-MLX` 或路径不对；http 后端：llama-server 没启动或 `LITFLOW_OCR_API` 填错（见上节） |
 | 机器风扇狂转 | 正常：OCR 任务较重；任务结束模型会自动卸载 |
 
@@ -228,12 +242,12 @@ LITFLOW_ZOTERO_API=http://localhost:23119/api
 | `LITFLOW_ZOTERO_API` | `http://localhost:23119/api` | Zotero 本地 API |
 | `LITFLOW_HOST` | `0.0.0.0` | 服务监听地址 |
 | `LITFLOW_PORT` | `8765` | 服务端口 |
-| `LITFLOW_EMBED_API` | `http://localhost:1234/v1` | embedding 服务地址（本地 LM Studio/Ollama 或远程平台；旧名 `LITFLOW_LMSTUDIO` 仍有效） |
+| `LITFLOW_EMBED_API` | `http://localhost:8080/v1` | embedding 服务地址（本地 mlx-lm/Ollama 或远程平台） |
 | `LITFLOW_EMBED_API_KEY` | （空） | embedding 服务密钥（远程商用平台必填） |
 | `LITFLOW_EMBED_MODEL` | `text-embedding-qwen3-embedding-4b` | embedding 模型名 |
 | `LITFLOW_LANCEDB` | `$LITFLOW_ROOT/_lancedb` | 向量库目录 |
 | `LITFLOW_OCR_BACKEND` | `auto` | OCR 后端：`mlx` / `http` / `auto`（设了 `LITFLOW_OCR_API` 则自动 http） |
-| `LITFLOW_OCR_MODEL` | `~/.lmstudio/models/LoJexLLM/Unlimited-OCR-MLX` | MLX 后端模型目录 |
+| `LITFLOW_OCR_MODEL` | `~/models/Unlimited-OCR-MLX` | MLX 后端模型目录 |
 | `LITFLOW_OCR_API` | （空） | http 后端服务地址（如 `http://127.0.0.1:8080/v1`） |
 | `LITFLOW_OCR_MODEL_NAME` | `Unlimited-OCR` | http 后端模型名 |
 | `LITFLOW_OCR_API_KEY` | （空） | http 后端鉴权 key（如有） |
@@ -325,7 +339,7 @@ litflow/
 
 litflow 站在以下项目肩膀上，深表感谢：
 
-- **[Unlimited-OCR](https://github.com/baidu/Unlimited-OCR)**（百度，MIT）— 文档 OCR 模型本体；`ocr_port/` 代码移植自 [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) 社区的 MLX 实现，权重经 LM Studio（作者 LoJexLLM 整理的 MLX 格式）分发；GGUF 量化版转换来自 [sahilchachra](https://huggingface.co/sahilchachra/Unlimited-OCR-GGUF)，http 后端经 [llama.cpp](https://github.com/ggml-org/llama.cpp)（MIT）的 llama-server 运行
+- **[Unlimited-OCR](https://github.com/baidu/Unlimited-OCR)**（百度，MIT）— 文档 OCR 模型本体；`ocr_port/` 代码移植自 [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) 社区的 MLX 实现；MLX 权重（LoJexLLM 整理格式）与 GGUF 量化版（[sahilchachra](https://huggingface.co/sahilchachra/Unlimited-OCR-GGUF)）均来自 HuggingFace 社区；http 后端经 [llama.cpp](https://github.com/ggml-org/llama.cpp)（MIT）的 llama-server 运行
 - **[cookjohn/zotero-mcp](https://github.com/cookjohn/zotero-mcp)** — 项目灵感来源之一
 - **[Zotero](https://www.zotero.org/)**（AGPL）— 文献管理本体与本地 API
 - **[PyMuPDF](https://github.com/pymupdf/PyMuPDF)**（AGPL）— PDF 文本提取与页码标签
@@ -333,7 +347,7 @@ litflow 站在以下项目肩膀上，深表感谢：
 - **[FastMCP](https://github.com/jlowin/fastmcp)**（MIT）— MCP 服务框架
 - **[anydoc](https://pypi.org/project/firecrawl-anydoc/)**（firecrawl-anydoc）— docx/epub 等非 PDF 文档转换
 - **[trafilatura](https://github.com/adbar/trafilatura)**（Apache-2.0）— 网页正文提取
-- **[LM Studio](https://lmstudio.ai/)** — 本地模型运行时（embedding 向量化服务）
+- **[mlx-lm](https://github.com/ml-explore/mlx-lm)**（Apple ml-explore，MIT）— 本地 embedding 推理服务（`mlx_lm.server`，OpenAI 兼容 API）
 - **[uv](https://docs.astral.sh/uv/)**（Astral，MIT）— Python 包管理
 
 ## License

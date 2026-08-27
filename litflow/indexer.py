@@ -1,6 +1,6 @@
 """litflow 向量索引与自然语言检索（LanceDB + OpenAI 兼容 embedding 服务）。
 
-- 嵌入服务：任意 OpenAI 兼容 /embeddings 接口——本地 LM Studio / Ollama /
+- 嵌入服务：任意 OpenAI 兼容 /embeddings 接口——本地 mlx-lm / Ollama /
   vLLM / llama-server，或远程商用平台（阿里云百炼、OpenRouter、SiliconFlow
   等），均只需填 API 地址与密钥（LITFLOW_EMBED_API / LITFLOW_EMBED_API_KEY）
 - 分块：按页码标注切块（页边界优先，块内保留页码上下文）
@@ -21,10 +21,7 @@ import numpy as np
 
 PAGE_MARK = re.compile(r"\*\*\[p\.([^\]]+)\]\*\*")
 
-# 兼容旧变量名 LITFLOW_LMSTUDIO（等价新名 LITFLOW_EMBED_API）
-DEFAULT_EMBED_API = os.environ.get("LITFLOW_EMBED_API") or os.environ.get(
-    "LITFLOW_LMSTUDIO", "http://localhost:1234/v1"
-)
+DEFAULT_EMBED_API = os.environ.get("LITFLOW_EMBED_API", "http://localhost:8080/v1")
 DEFAULT_EMBED_API_KEY = os.environ.get("LITFLOW_EMBED_API_KEY", "")
 DEFAULT_EMBED_MODEL = os.environ.get(
     "LITFLOW_EMBED_MODEL", "text-embedding-qwen3-embedding-4b"

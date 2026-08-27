@@ -19,7 +19,7 @@ from .zotero_collector import LitRecord, ZoteroCollector
 
 OCR_MODEL_DIR = os.environ.get(
     "LITFLOW_OCR_MODEL",
-    "~/.lmstudio/models/LoJexLLM/Unlimited-OCR-MLX",
+    "~/models/Unlimited-OCR-MLX",
 )
 OCR_MODEL_DIR = os.path.expanduser(OCR_MODEL_DIR)
 
@@ -31,7 +31,7 @@ class OCREngineHolder:
 
     后端二选一（详见 ocr_backends 模块文档）：
       - mlx ：本机 ocr_port（Apple Silicon）
-      - http：OpenAI 兼容服务（llama-server / LM Studio 等跑 GGUF，全平台）
+      - http：OpenAI 兼容服务（llama-server / vLLM 等跑 GGUF，全平台）
     """
 
     def __init__(self, model_dir: str = OCR_MODEL_DIR):

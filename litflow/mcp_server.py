@@ -425,7 +425,7 @@ def litflow_doctor() -> str:
         lines.append(f"✓ Zotero 本地 API 在线（{len(colls)} 个分类）")
     except Exception as e:  # noqa: BLE001
         lines.append(f"✗ Zotero 本地 API 不可达：{e}")
-    # embedding 服务（本地 LM Studio/Ollama 或远程商用平台）
+    # embedding 服务（本地 mlx-lm/Ollama 或远程商用平台）
     try:
         models = _pipe.embedder.embed(["诊断"])
         lines.append(f"✓ embedding 服务在线（{_pipe.embedder.model}，{models.shape[1]} 维）")

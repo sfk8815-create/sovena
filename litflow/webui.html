@@ -636,7 +636,7 @@ async function doSearch() {
   const coll = $('#qColl').value;
   const r = await (await fetch(`/api/search?q=${encodeURIComponent(q)}${coll ? '&collection=' + encodeURIComponent(coll) : ''}`)).json();
   if (r.error) { $('#searchArea').innerHTML = `<span style="color:var(--err)">${esc(r.error)}</span>`; return; }
-  if (!r.hits.length) { $('#searchArea').innerHTML = '<span class="empty-hint">无结果（对应分类是否已准备？LM Studio 是否在线？）</span>'; return; }
+  if (!r.hits.length) { $('#searchArea').innerHTML = '<span class="empty-hint">无结果（对应分类是否已准备？embedding 服务是否在线？）</span>'; return; }
   const rx = new RegExp(q.split(/\s+/).filter(Boolean).slice(0,3).map(esc).join('|'), 'gi');
   $('#searchArea').innerHTML = r.hits.map(h => `
     <div class="hit">
@@ -656,7 +656,7 @@ async function loadConfig() {
     const items = [
       ['语义包根目录', c.root, 'LITFLOW_ROOT'],
       ['Zotero 本地 API', c.zotero_api, 'LITFLOW_ZOTERO_API'],
-      ['Embedding 服务', c.embed_api || c.lmstudio, 'LITFLOW_EMBED_API（+ LITFLOW_EMBED_API_KEY）'],
+      ['Embedding 服务', c.embed_api, 'LITFLOW_EMBED_API（+ LITFLOW_EMBED_API_KEY）'],
       ['向量模型', c.embed_model, 'LITFLOW_EMBED_MODEL'],
       ['OCR 后端', ocrDesc, 'LITFLOW_OCR_BACKEND / LITFLOW_OCR_API'],
       ['LanceDB 目录', c.lancedb, 'LITFLOW_LANCEDB'],
