@@ -13,6 +13,7 @@ from typing import Callable, Optional
 
 from .converter import ConvertResult, convert_attachment
 from .indexer import LMStudioEmbedder, VectorIndex, chunk_markdown
+from .ocr_backends import resolve_backend
 from .packager import Packager, file_fingerprint, md5_of_file
 from .zotero_collector import LitRecord, ZoteroCollector
 
@@ -26,17 +27,28 @@ ProgressFn = Callable[[str, dict], None]
 
 
 class OCREngineHolder:
-    """OCR 引擎懒加载/卸载（避免常驻内存，配合调度器）。"""
+    """OCR 引擎懒加载/卸载（避免常驻内存，配合调度器）。
+
+    后端二选一（详见 ocr_backends 模块文档）：
+      - mlx ：本机 ocr_port（Apple Silicon）
+      - http：OpenAI 兼容服务（llama-server / LM Studio 等跑 GGUF，全平台）
+    """
 
     def __init__(self, model_dir: str = OCR_MODEL_DIR):
         self.model_dir = model_dir
+        self.backend = resolve_backend()
         self._engine = None
 
     def get(self):
         if self._engine is None:
-            from ocr_port import UnlimitedOCRInference
+            if self.backend == "http":
+                from .ocr_backends import OpenAICompatOCREngine
 
-            self._engine = UnlimitedOCRInference(self.model_dir).load()
+                self._engine = OpenAICompatOCREngine()
+            else:
+                from ocr_port import UnlimitedOCRInference
+
+                self._engine = UnlimitedOCRInference(self.model_dir).load()
         return self._engine
 
     def release(self):

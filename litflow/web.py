@@ -239,6 +239,7 @@ async def api_system(_: Request):
 async def api_config(_: Request):
     """只读配置信息（修改需设置环境变量后重启服务）。"""
     from .indexer import DEFAULT_DB_PATH, DEFAULT_EMBED_MODEL, DEFAULT_LMSTUDIO
+    from .ocr_backends import backend_info
     from .zotero_collector import DEFAULT_API
 
     return JSONResponse({
@@ -247,6 +248,7 @@ async def api_config(_: Request):
         "zotero_api": DEFAULT_API,
         "lmstudio": DEFAULT_LMSTUDIO,
         "embed_model": DEFAULT_EMBED_MODEL,
+        "ocr": backend_info(),
         "host": os.environ.get("LITFLOW_HOST", "0.0.0.0"),
         "port": DEFAULT_PORT,
     })

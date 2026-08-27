@@ -33,6 +33,7 @@ from __future__ import annotations
 import os
 import time
 
+import httpx
 from fastmcp import FastMCP
 
 from . import web as webmod
@@ -441,13 +442,24 @@ def litflow_doctor() -> str:
         lines.append(f"✓ 语义包目录可写：{root}")
     except OSError as e:
         lines.append(f"✗ 语义包目录不可写（{root}）：{e}")
-    # OCR 模型
-    from .pipeline import OCR_MODEL_DIR
+    # OCR 后端
+    from .ocr_backends import backend_info
 
-    if os.path.isdir(OCR_MODEL_DIR):
-        lines.append(f"✓ OCR 模型目录存在：{OCR_MODEL_DIR}")
+    bi = backend_info()
+    if bi["backend"] == "http":
+        try:
+            r = httpx.get(f"{bi['api'].rstrip('/')}/models", timeout=10)
+            r.raise_for_status()
+            lines.append(f"✓ OCR http 后端在线：{bi['api']}（模型 {bi['model_name']}）")
+        except Exception as e:  # noqa: BLE001
+            lines.append(f"✗ OCR http 后端不可达：{bi['api']}（{e}）")
+    elif os.path.isdir(bi["mlx_model_dir"]):
+        lines.append(f"✓ OCR mlx 模型目录存在：{bi['mlx_model_dir']}")
     else:
-        lines.append(f"✗ OCR 模型目录不存在：{OCR_MODEL_DIR}（扫描件将无法转换）")
+        lines.append(
+            f"✗ OCR mlx 模型目录不存在：{bi['mlx_model_dir']}（扫描件将无法转换；"
+            "可改用 http 后端服务 GGUF，见 README「OCR 引擎与模型部署」）"
+        )
     return "\n".join(lines)
 
 

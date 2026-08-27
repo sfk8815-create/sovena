@@ -17,7 +17,7 @@
 | --- | --- | --- |
 | Zotero 分类/条目/标注读取 | ✅ | ✅（本地 API，无需 Web API key） |
 | 文献全文获取 | 链接附件路径 | ✅ 转换为 AI 友好 Markdown（含【书页页码】标注） |
-| 扫描/影印 PDF OCR | ❌ | ✅ L2 通道（Unlimited-OCR-MLX，Apple Silicon） |
+| 扫描/影印 PDF OCR | ❌ | ✅ L2 通道（Unlimited-OCR，MLX / GGUF 双后端，全平台） |
 | 向量语义检索 | ❌ | ✅ LanceDB + LM Studio embedding |
 | 增量处理 | ❌ | ✅ 条目 version + 附件指纹（mtime）双重检测 |
 | 一键启动 | 多步配置 | ✅ `uv run litflow` 单进程起 Web + MCP |
@@ -42,30 +42,59 @@ Zotero(本地API) ─┐
 ```
 
 - **L1 文本路**：有文本层的 PDF → pymupdf 提取，页码标注优先用 PDF Page Labels（书页页码，非物理页序）
-- **L2 OCR 路**：扫描/影印件 → MLX OCR 结构化识别，页码优先级：OCR 识别的 page_number > PDF Page Label > 物理页序
+- **L2 OCR 路**：扫描/影印件 → Unlimited-OCR 结构化识别（MLX / GGUF 双后端），页码优先级：OCR 识别的 page_number > PDF Page Label > 物理页序
 - **非 PDF**：docx / epub / html / txt / md / xlsx / pptx 等 → anydoc / trafilatura
 - **检索**：LM Studio 提供 embedding（如 qwen3-embedding），LanceDB 本地向量库
 
 ## OCR 引擎与模型部署
 
-litflow 的 OCR 通道使用 **Unlimited-OCR**（[百度开源](https://github.com/baidu/Unlimited-OCR)，MIT 协议，模型权重在 [HuggingFace `baidu/Unlimited-OCR`](https://huggingface.co/baidu/Unlimited-OCR)）：DeepSeek-V2 MoE 解码器 + SAM/CLIP 双视觉塔的文档 OCR 模型，能整篇识别多页扫描件并还原标题/表格/版式。本仓库的 `ocr_port/` 是其 **MLX 移植**（来自 [mlx-vlm 社区实现](https://github.com/Blaizzy/mlx-vlm)），在 Apple Silicon 上原生跑、无需显卡/CUDA。
+litflow 的 OCR 通道使用 **Unlimited-OCR**（[百度开源](https://github.com/baidu/Unlimited-OCR)，MIT 协议，模型权重在 [HuggingFace `baidu/Unlimited-OCR`](https://huggingface.co/baidu/Unlimited-OCR)）：DeepSeek-V2 MoE 解码器 + SAM/CLIP 双视觉塔的文档 OCR 模型，能整篇识别多页扫描件并还原标题/表格/版式。
 
-**部署方式（二选一）**：
+支持**两种后端**，输出同为结构化格式，下游转换无感知：
 
-1. **LM Studio 下载（推荐，最简单）**：打开 LM Studio → 搜索 `Unlimited-OCR-MLX`（作者 LoJexLLM 上传的 MLX 权重格式）→ 下载。模型会落在 `~/.lmstudio/models/LoJexLLM/Unlimited-OCR-MLX/`，正是 litflow 的默认路径，**无需任何配置**。
-2. **HuggingFace 手动下载**：从 HuggingFace 下载 MLX 权重目录，放到任意位置，然后在 `.env` 里指定：
+| 后端 | 运行方式 | 适用平台 |
+| --- | --- | --- |
+| `mlx`（默认） | 本仓库 `ocr_port/`（[mlx-vlm 社区 MLX 实现](https://github.com/Blaizzy/mlx-vlm)） | Apple Silicon Mac |
+| `http` | OpenAI 兼容接口：llama-server / LM Studio / vLLM 服务 **GGUF 量化版** | **任意平台**（Windows / Linux / Intel Mac，纯 CPU 亦可） |
+
+### 后端一：MLX（Apple Silicon，默认零配置）
+
+打开 LM Studio → 搜索 `Unlimited-OCR-MLX`（作者 LoJexLLM 上传的 MLX 权重格式）→ 下载。模型会落在 `~/.lmstudio/models/LoJexLLM/Unlimited-OCR-MLX/`，正是 litflow 的默认路径，**无需任何配置**。
+
+也可从 HuggingFace 手动下载 MLX 权重目录，放到任意位置后在 `.env` 指定：
 
 ```dotenv
 LITFLOW_OCR_MODEL=/path/to/Unlimited-OCR-MLX
 ```
 
-> OCR 模型约 7GB（fp16），只在遇到扫描件时才加载进内存，转换完立即释放（引擎按需加载，平时不占内存）。若不处理扫描件，可不装此模型（Web 台取消勾选「启用 OCR」即可）。
+### 后端二：GGUF（任意电脑，含无 GPU 的 Windows/Linux）
+
+Unlimited-OCR 有社区 GGUF 量化版（[HuggingFace `sahilchachra/Unlimited-OCR-GGUF`](https://huggingface.co/sahilchachra/Unlimited-OCR-GGUF)，需下载主模型如 `Unlimited-OCR-Q4_K_M.gguf`（约 3.2GB）+ 视觉投影器 `mmproj-Unlimited-OCR-F16.gguf`），用 llama.cpp 的 llama-server 起一个本地服务即可：
+
+```bash
+# 1. 下载模型（二选一）
+huggingface-cli download sahilchachra/Unlimited-OCR-GGUF \
+  Unlimited-OCR-Q4_K_M.gguf mmproj-Unlimited-OCR-F16.gguf --local-dir ./ocr-models
+# 国内可用 ModelScope 或镜像加速
+
+# 2. 启动 OpenAI 兼容服务（8080 端口，任意平台；含 GPU 加速则加对应参数）
+llama-server -m ocr-models/Unlimited-OCR-Q4_K_M.gguf \
+  --mmproj ocr-models/mmproj-Unlimited-OCR-F16.gguf \
+  --host 127.0.0.1 --port 8080
+
+# 3. litflow 侧启用 http 后端（项目根目录 .env）
+echo 'LITFLOW_OCR_API=http://127.0.0.1:8080/v1' >> .env
+```
+
+也可用 LM Studio / vLLM 等任何能跑该 GGUF 的 OpenAI 兼容服务（模型名不同时加 `LITFLOW_OCR_MODEL_NAME=...`；有鉴权加 `LITFLOW_OCR_API_KEY=...`）。OCR 服务甚至可以部署在另一台有 GPU 的机器上，litflow 填它的地址即可。
+
+> 提示：Q4 量化约 3GB，16GB 内存的普通电脑即可运行。litflow 按需调用（逐页请求），不在 litflow 进程内占内存。
 
 **Embedding 模型（检索用，必须）**：LM Studio → 搜索 `qwen3-embedding-4b` → 下载并加载 → 保持 LM Studio 本地服务开启（默认 `http://localhost:1234/v1`）。litflow 经 HTTP 调用它做向量化。
 
 ## 快速开始（新手保姆级）
 
-要求：任意电脑均可部署，核心流程只需 Python ≥ 3.12（Windows / macOS / Linux 通用）；**OCR 通道**依赖 MLX 框架，仅支持 Apple Silicon Mac。全程只需复制粘贴命令。
+要求：任意电脑均可部署，核心流程只需 Python ≥ 3.12（Windows / macOS / Linux 通用）。**OCR 通道二选一**：Apple Silicon 用默认 MLX 后端（零配置）；其他平台（或想用 GPU 服务器跑 OCR）用 GGUF 后端（见上节「后端二」）。全程只需复制粘贴命令。
 
 ### 第 1 步：装 uv（Python 包管理器，一次性）
 
@@ -88,8 +117,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 到 [lmstudio.ai](https://lmstudio.ai/) 下载安装 LM Studio：
 
 1. **embedding 模型（检索必需）**：LM Studio 里搜索 `qwen3-embedding-4b` → 下载 → 加载到内存 → 顶部「Developer」标签确认本地服务已启动
-2. **OCR 模型（仅扫描件需要）**：搜索 `Unlimited-OCR-MLX` → 下载即可（litflow 需要时会自己加载/释放，不用在 LM Studio 里常驻）
+2. **OCR 模型（仅扫描件需要，Apple Silicon）**：搜索 `Unlimited-OCR-MLX` → 下载即可（litflow 需要时会自己加载/释放，不用在 LM Studio 里常驻）
 
+> **非 Apple Silicon 电脑**做 OCR：LM Studio 只是路径之一，改用「GGUF 后端」更通用——下载 [Unlimited-OCR-GGUF](https://huggingface.co/sahilchachra/Unlimited-OCR-GGUF) + 跑 llama-server，配置见上节「后端二」。
 > 只想快速体验、暂时不检索？LM Studio 可以后补，先跳过做第 4-5 步。
 
 ### 第 4 步：获取 litflow 并安装依赖
@@ -100,7 +130,7 @@ cd litflow
 uv sync        # 自动下载全部依赖（首次约 1.3GB，需要几分钟）
 ```
 
-> 非 Apple Silicon 电脑（Windows / Linux / Intel Mac）：MLX 相关依赖仅在用到 OCR 通道时才需要，`uv sync` 在这些平台会自动跳过或用 CPU 兼容版本安装；文本 PDF、非 PDF 文档转换、检索等核心功能均可正常使用。
+> 非 Apple Silicon 电脑（Windows / Linux / Intel Mac）：MLX 相关依赖仅在 MLX OCR 后端用到，`uv sync` 在这些平台会自动跳过或用 CPU 兼容版本安装；文本 PDF、非 PDF 文档转换、检索等核心功能，以及 GGUF 后端的 OCR，均可正常使用。
 
 ### 第 5 步：一键启动
 
@@ -137,7 +167,7 @@ Web 台「Zotero 文献流」→ 选一个**小分类**（如 5 条文献）→�
 | 提示端口被占用 | 旧服务没关：`lsof -ti tcp:8765 \| xargs kill` 后重启 |
 | 「Zotero 连接失败」 | Zotero 没打开，或装的是旧版（需 7.0+） |
 | 检索报错/无结果 | LM Studio 没开服务、embedding 模型没加载；或该分类还没「准备」过 |
-| OCR 报模型错误 | 没下载 `Unlimited-OCR-MLX`，或路径不对（见上节） |
+| OCR 报模型错误 | MLX 后端：没下载 `Unlimited-OCR-MLX` 或路径不对；http 后端：llama-server 没启动或 `LITFLOW_OCR_API` 填错（见上节） |
 | 机器风扇狂转 | 正常：OCR 任务较重；任务结束模型会自动卸载 |
 
 ### 第 8 步（可选）：AI 客户端接入（其他电脑同样适用）
@@ -188,6 +218,11 @@ LITFLOW_ZOTERO_API=http://localhost:23119/api
 | `LITFLOW_LMSTUDIO` | LM Studio 本地 embedding 地址 | 向量化服务 |
 | `LITFLOW_EMBED_MODEL` | `text-embedding-qwen3-embedding-4b` | embedding 模型名 |
 | `LITFLOW_LANCEDB` | `$LITFLOW_ROOT/_lancedb` | 向量库目录 |
+| `LITFLOW_OCR_BACKEND` | `auto` | OCR 后端：`mlx` / `http` / `auto`（设了 `LITFLOW_OCR_API` 则自动 http） |
+| `LITFLOW_OCR_MODEL` | `~/.lmstudio/models/LoJexLLM/Unlimited-OCR-MLX` | MLX 后端模型目录 |
+| `LITFLOW_OCR_API` | （空） | http 后端服务地址（如 `http://127.0.0.1:8080/v1`） |
+| `LITFLOW_OCR_MODEL_NAME` | `Unlimited-OCR` | http 后端模型名 |
+| `LITFLOW_OCR_API_KEY` | （空） | http 后端鉴权 key（如有） |
 | `LITFLOW_MEM_GUARD_MB` | `12288` | 内存守卫阈值（MB），低于则推迟新任务 |
 
 ## 使用
@@ -276,7 +311,7 @@ litflow/
 
 litflow 站在以下项目肩膀上，深表感谢：
 
-- **[Unlimited-OCR](https://github.com/baidu/Unlimited-OCR)**（百度，MIT）— 文档 OCR 模型本体；`ocr_port/` 代码移植自 [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) 社区的 MLX 实现，权重经 LM Studio（作者 LoJexLLM 整理的 MLX 格式）分发
+- **[Unlimited-OCR](https://github.com/baidu/Unlimited-OCR)**（百度，MIT）— 文档 OCR 模型本体；`ocr_port/` 代码移植自 [mlx-vlm](https://github.com/Blaizzy/mlx-vlm) 社区的 MLX 实现，权重经 LM Studio（作者 LoJexLLM 整理的 MLX 格式）分发；GGUF 量化版转换来自 [sahilchachra](https://huggingface.co/sahilchachra/Unlimited-OCR-GGUF)，http 后端经 [llama.cpp](https://github.com/ggml-org/llama.cpp)（MIT）的 llama-server 运行
 - **[cookjohn/zotero-mcp](https://github.com/cookjohn/zotero-mcp)** — 本项目对标与超越的起点
 - **[Zotero](https://www.zotero.org/)**（AGPL）— 文献管理本体与本地 API
 - **[PyMuPDF](https://github.com/pymupdf/PyMuPDF)**（AGPL）— PDF 文本提取与页码标签

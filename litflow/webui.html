@@ -650,11 +650,15 @@ let mcpCfgText = '';
 async function loadConfig() {
   try {
     const c = await (await fetch('/api/config')).json();
+    const ocrDesc = c.ocr ? (c.ocr.backend === 'http'
+      ? `http 后端 · ${c.ocr.api}（模型 ${c.ocr.model_name || '默认'}）`
+      : `mlx 后端 · ${c.ocr.mlx_model_dir || '默认路径'}`) : '-';
     const items = [
       ['语义包根目录', c.root, 'LITFLOW_ROOT'],
       ['Zotero 本地 API', c.zotero_api, 'LITFLOW_ZOTERO_API'],
       ['LM Studio embedding', c.lmstudio, 'LITFLOW_LMSTUDIO'],
       ['向量模型', c.embed_model, 'LITFLOW_EMBED_MODEL'],
+      ['OCR 后端', ocrDesc, 'LITFLOW_OCR_BACKEND / LITFLOW_OCR_API'],
       ['LanceDB 目录', c.lancedb, 'LITFLOW_LANCEDB'],
       ['服务监听', `${c.host}:${c.port}`, 'LITFLOW_HOST / LITFLOW_PORT'],
     ];
